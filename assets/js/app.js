@@ -6,8 +6,8 @@ document.addEventListener('alpine:init', () => {
   // Global App Configuration Store
   Alpine.store('app', {
     darkMode: localStorage.getItem('presensi_dark_mode') === 'true',
-    apiUrl: localStorage.getItem('presensi_gas_url') || 'https://script.google.com/macros/s/AKfycbxr1mNOwmxkv6r5v9K33on29WExE4sJYAa4CRHRqxC1Jtl1GYuCFApXVuOKyONzDlbK/exec', // Google Apps Script URL
-    isMockMode: !localStorage.getItem('presensi_gas_url'),
+    apiUrl: 'https://script.google.com/macros/s/AKfycbxr1mNOwmxkv6r5v9K33on29WExE4sJYAa4CRHRqxC1Jtl1GYuCFApXVuOKyONzDlbK/exec', // Google Apps Script URL
+    isMockMode: false,
     isOnline: navigator.onLine,
 
     init() {
