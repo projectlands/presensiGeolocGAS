@@ -245,7 +245,7 @@
         <!-- List Timeline logs -->
         <div x-show="!loadingLogs && historyLogs.length > 0" class="space-y-3 max-h-72 overflow-y-auto pr-1">
           <template x-for="log in historyLogs" :key="log.id">
-            <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between gap-3 shadow-sm hover:border-slate-200/70 dark:hover:border-slate-800 transition">
+            <div x-init="$nextTick(() => lucide.createIcons())" class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between gap-3 shadow-sm hover:border-slate-200/70 dark:hover:border-slate-800 transition">
               <div class="flex items-center gap-3">
                 <div class="relative shrink-0 cursor-pointer" @click="showSelfiePreview(log.selfie_url)">
                   <img :src="log.selfie_url" alt="Selfie" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800">
