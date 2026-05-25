@@ -198,13 +198,13 @@ function updateUser(ss, payload) {
 
   for (let i = 1; i < data.length; i++) {
     if (data[i][idColIdx].toString() === payload.id.toString()) {
-      sheet.getCell(i + 1, 2).setValue(payload.nama);
-      sheet.getCell(i + 1, 3).setValue(payload.username);
+      sheet.getRange(i + 1, 2).setValue(payload.nama);
+      sheet.getRange(i + 1, 3).setValue(payload.username);
       if (payload.password) {
-        sheet.getCell(i + 1, 4).setValue(payload.password);
+        sheet.getRange(i + 1, 4).setValue(payload.password);
       }
-      sheet.getCell(i + 1, 5).setValue(payload.role);
-      sheet.getCell(i + 1, 6).setValue(payload.status);
+      sheet.getRange(i + 1, 5).setValue(payload.role);
+      sheet.getRange(i + 1, 6).setValue(payload.status);
       return makeJsonResponse({ success: true, message: 'User berhasil diupdate!' });
     }
   }
@@ -236,10 +236,10 @@ function saveConfig(ss, payload) {
   
   for (let i = 1; i < data.length; i++) {
     if (data[i][0].toString() === payload.location_id.toString()) {
-      sheet.getCell(i + 1, 2).setValue(payload.office_name);
-      sheet.getCell(i + 1, 3).setValue(payload.office_lat);
-      sheet.getCell(i + 1, 4).setValue(payload.office_lng);
-      sheet.getCell(i + 1, 5).setValue(payload.radius);
+      sheet.getRange(i + 1, 2).setValue(payload.office_name);
+      sheet.getRange(i + 1, 3).setValue(payload.office_lat);
+      sheet.getRange(i + 1, 4).setValue(payload.office_lng);
+      sheet.getRange(i + 1, 5).setValue(payload.radius);
       return makeJsonResponse({ success: true, message: 'Konfigurasi lokasi berhasil diupdate!' });
     }
   }
@@ -290,8 +290,8 @@ function saveAttendance(ss, payload) {
       const matchDate = data[i][3].toString() === payload.tanggal.toString();
       
       if (matchUserId && matchDate) {
-        sheet.getCell(i + 1, 6).setValue(payload.jam_pulang); // Jam Pulang (Kolom F)
-        sheet.getCell(i + 1, 11).setValue('Pulang'); // Status (Kolom K)
+        sheet.getRange(i + 1, 6).setValue(payload.jam_pulang); // Jam Pulang (Kolom F)
+        sheet.getRange(i + 1, 11).setValue('Pulang'); // Status (Kolom K)
         
         return makeJsonResponse({ success: true, message: 'Absensi pulang berhasil disimpan!' });
       }
