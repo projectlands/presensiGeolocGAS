@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Presensi Geolokasi - Dashboard</title>
+  
+  <!-- PWA Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- CDNs -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          borderRadius: {
+            '2xl': '1.25rem',
+            '3xl': '1.75rem',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Leaflet Map CSS/JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Icons & SweetAlert -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- App Custom Assets -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/helper.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/attendance.js"></script>
+  <script src="assets/js/app.js"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen pb-24" x-data="attendanceData">
+
+  <!-- Pull to Refresh Mobile Overlay -->
+  <div id="pull-to-refresh-indicator" class="fixed top-0 left-1/2 transform -translate-x-1/2 -translate-y-[60px] opacity-0 transition-all duration-300 z-50 bg-white dark:bg-slate-800 shadow-lg rounded-full p-2.5 flex items-center gap-2 border border-slate-100 dark:border-slate-700">
+    <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+    <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">Refreshing...</span>
+  </div>
+
+  <!-- Route Protection Guard -->
+  <script>
+    Auth.checkProtection('user');
+  </script>
+
+  <!-- Shell Wrapper -->
+  <div class="w-full max-w-lg mx-auto p-4" x-cloak>
+    
+    <!-- Top Nav Header -->
+    <header class="flex items-center justify-between py-4 mb-6">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-full bg-blue-600/10 dark:bg-blue-500/15 border border-blue-200/20 flex items-center justify-center font-bold text-blue-600 dark:text-blue-400">
+          <span x-text="currentUser ? currentUser.nama.charAt(0) : 'U'"></span>
+        </div>
+        <div>
+          <h2 class="text-sm text-slate-500 dark:text-slate-400">Halo, Selamat Bekerja</h2>
+          <h1 class="text-base font-extrabold text-slate-900 dark:text-white" x-text="currentUser ? currentUser.nama : 'Memuat...'"></h1>
+        </div>
+      </div>
+      
+      <div class="flex items-center gap-2.5">
+        <button 
+          @click="$store.app.toggleDarkMode()" 
+          class="p-2.5 rounded-2xl bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800/80 shadow-sm transition"
+        >
+          <i :data-lucide="$store.app.darkMode ? 'sun' : 'moon'" class="w-4.5 h-4.5 text-slate-600 dark:text-slate-300"></i>
+        </button>
+        <button 
+          @click="Auth.logout()" 
+          class="p-2.5 rounded-2xl bg-white hover:bg-slate-50 dark:bg-slate-900 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-800/80 shadow-sm transition text-rose-500"
+          title="Keluar"
+        >
+          <i data-lucide="log-out" class="w-4.5 h-4.5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Content Segment -->
+    <main class="space-y-5">
+      
+      <!-- Date & Clock Section -->
+      <section class="glass-panel p-6 rounded-3xl border border-white/45 dark:border-slate-800/60 shadow-lg text-center relative overflow-hidden">
+        <div class="absolute -right-12 -top-12 w-28 h-28 bg-blue-500/10 rounded-full blur-2xl"></div>
+        <p class="text-sm font-semibold text-slate-500 dark:text-slate-400 mb-1" x-text="currentDate"></p>
+        <h1 class="text-4xl font-black text-slate-900 dark:text-white tracking-tight tabular-nums select-none" x-text="currentTime"></h1>
+        
+        <!-- Mock Indicator -->
+        <span x-show="$store.app.isMockMode" class="inline-flex items-center gap-1.5 px-2.5 py-1 bg-amber-500/10 border border-amber-500/25 rounded-full text-[10px] font-bold text-amber-600 dark:text-amber-400 mt-3 animate-pulse">
+          <span class="w-1.5 h-1.5 rounded-full bg-amber-500"></span> DEMO MODE (LOKAL)
+        </span>
+      </section>
+
+      <!-- Geolocation Metrics Card -->
+      <section class="glass-panel p-5 rounded-3xl border border-white/45 dark:border-slate-800/60 shadow-lg space-y-4">
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800/80">
+          <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-1.5">
+            <i data-lucide="map" class="w-4 h-4 text-blue-500"></i> Status Geolokasi Realtime
+          </h3>
+          <button 
+            @click="startGpsTracking()" 
+            class="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 hover:underline transition"
+          >
+            <i data-lucide="navigation" class="w-3.5 h-3.5"></i> Kalibrasi GPS
+          </button>
+        </div>
+
+        <!-- GPS Load State -->
+        <div x-show="gpsLoading" class="flex flex-col items-center justify-center py-6 space-y-2">
+          <div class="w-10 h-10 rounded-full bg-blue-600/10 flex items-center justify-center gps-radar">
+            <i data-lucide="radar" class="w-5 h-5 text-blue-600 dark:text-blue-400 animate-spin"></i>
+          </div>
+          <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">Mendeteksi lokasi satelit GPS...</span>
+        </div>
+
+        <!-- GPS Error Block -->
+        <div x-show="gpsError && !gpsLoading" class="p-3.5 bg-rose-500/10 border border-rose-500/20 rounded-2xl flex gap-2.5 items-start">
+          <i data-lucide="alert-triangle" class="w-5 h-5 text-rose-500 shrink-0 mt-0.5 animate-bounce"></i>
+          <div>
+            <h4 class="text-xs font-bold text-rose-800 dark:text-rose-400">GPS Mengalami Masalah</h4>
+            <p class="text-[11px] text-rose-700 dark:text-rose-300 mt-0.5" x-text="gpsError"></p>
+          </div>
+        </div>
+
+        <!-- GPS Success Content Grid -->
+        <div x-show="!gpsLoading && !gpsError" class="space-y-4">
+          <div class="grid grid-cols-2 gap-3.5 text-center">
+            <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block uppercase tracking-wider font-semibold">Jarak Kantor</span>
+              <span class="text-lg font-extrabold text-slate-900 dark:text-white tabular-nums" x-text="distance !== null ? `${distance} m` : '-'"></span>
+            </div>
+            <div class="p-3 bg-slate-50 dark:bg-slate-900 rounded-2xl border border-slate-100 dark:border-slate-800/80">
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block uppercase tracking-wider font-semibold">Akurasi GPS</span>
+              <span class="text-lg font-extrabold text-slate-900 dark:text-white tabular-nums" x-text="accuracy !== null ? `±${Math.round(accuracy)} m` : '-'"></span>
+            </div>
+          </div>
+
+          <!-- Radius Valid indicator -->
+          <div 
+            class="p-3.5 rounded-2xl flex gap-2.5 items-center justify-between"
+            :class="isValidRadius ? 'bg-emerald-500/10 border border-emerald-500/20' : 'bg-amber-500/10 border border-amber-500/20'"
+          >
+            <div class="flex items-center gap-2.5">
+              <div 
+                class="w-8 h-8 rounded-full flex items-center justify-center shadow-inner shrink-0"
+                :class="isValidRadius ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400' : 'bg-amber-500/20 text-amber-600 dark:text-amber-400'"
+              >
+                <i :data-lucide="isValidRadius ? 'check-circle-2' : 'alert-circle'" class="w-5 h-5"></i>
+              </div>
+              <div class="text-left">
+                <span class="text-[10px] text-slate-500 dark:text-slate-400 block uppercase tracking-wider font-semibold">Status Kehadiran</span>
+                <span class="text-xs font-bold" :class="isValidRadius ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'">
+                  <span x-text="isValidRadius ? 'Di dalam Radius Absensi' : 'Di luar Radius Kantor'"></span>
+                </span>
+              </div>
+            </div>
+            
+            <div class="text-right">
+              <span class="text-[10px] text-slate-500 dark:text-slate-400 block uppercase tracking-wider font-semibold">Lokasi Terdekat</span>
+              <span class="text-xs font-black text-slate-800 dark:text-slate-200" x-text="nearestLocation ? nearestLocation.office_name : 'Mencari...'"></span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Live Interactive Map Section -->
+      <section x-show="!gpsLoading && !gpsError" class="relative rounded-3xl overflow-hidden shadow-md border border-slate-200/50 dark:border-slate-800/80">
+        <div id="map" class="w-full h-44 bg-slate-100 dark:bg-slate-900 relative"></div>
+      </section>
+
+      <!-- Primary Action Buttons Card -->
+      <section class="glass-panel p-6 rounded-3xl border border-white/45 dark:border-slate-800/60 shadow-lg text-center space-y-4">
+        
+        <div class="grid grid-cols-2 gap-4">
+          <!-- Check-in Action -->
+          <div class="space-y-2">
+            <button 
+              @click="startCamera(); $store.app.activeAction = 'masuk';"
+              :disabled="!isValidRadius || (todayAttendance && todayAttendance.jam_masuk)"
+              class="w-full py-4 px-4 bg-emerald-600 hover:bg-emerald-700 text-white rounded-2xl font-bold shadow-lg shadow-emerald-600/10 hover:translate-y-[-1px] active:translate-y-[0px] focus:outline-none transition duration-200 disabled:opacity-40 disabled:pointer-events-none flex flex-col items-center justify-center gap-1"
+            >
+              <i data-lucide="fingerprint" class="w-6 h-6"></i>
+              <span class="text-sm">Presensi Masuk</span>
+            </button>
+            <p class="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+              Masuk: <strong class="text-emerald-600 dark:text-emerald-400" x-text="todayAttendance && todayAttendance.jam_masuk ? todayAttendance.jam_masuk.substring(0, 5) : '--:--'"></strong>
+            </p>
+          </div>
+
+          <!-- Check-out Action -->
+          <div class="space-y-2">
+            <button 
+              @click="startCamera(); $store.app.activeAction = 'pulang';"
+              :disabled="!isValidRadius || !todayAttendance || (todayAttendance && todayAttendance.jam_pulang)"
+              class="w-full py-4 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/10 hover:translate-y-[-1px] active:translate-y-[0px] focus:outline-none transition duration-200 disabled:opacity-40 disabled:pointer-events-none flex flex-col items-center justify-center gap-1"
+            >
+              <i data-lucide="log-out" class="w-6 h-6"></i>
+              <span class="text-sm">Presensi Pulang</span>
+            </button>
+            <p class="text-xs text-slate-500 dark:text-slate-400 tabular-nums">
+              Pulang: <strong class="text-blue-600 dark:text-blue-400" x-text="todayAttendance && todayAttendance.jam_pulang ? todayAttendance.jam_pulang.substring(0, 5) : '--:--'"></strong>
+            </p>
+          </div>
+        </div>
+
+        <!-- Outside perimeter warning helper -->
+        <div x-show="!isValidRadius && !gpsLoading && !gpsError" class="p-3 bg-amber-500/10 rounded-2xl text-[11px] text-amber-800 dark:text-amber-400 font-medium">
+          Tombol dinonaktifkan karena Anda di luar radius. Silakan mendekat ke area <strong><span x-text="nearestLocation ? nearestLocation.office_name : 'kantor'"></span></strong> (Radius <span x-text="nearestLocation ? nearestLocation.radius : '100'"></span>m).
+        </div>
+      </section>
+
+      <!-- History & Logs Timeline -->
+      <section class="glass-panel p-5 rounded-3xl border border-white/45 dark:border-slate-800/60 shadow-lg space-y-4">
+        <h3 class="font-bold text-slate-800 dark:text-slate-200 text-sm flex items-center gap-1.5">
+          <i data-lucide="history" class="w-4 h-4 text-slate-500"></i> Riwayat Absensi Terakhir
+        </h3>
+
+        <!-- Skeleton Logs Loader -->
+        <div x-show="loadingLogs" class="space-y-3">
+          <template x-for="i in 3" :key="i">
+            <div class="h-14 rounded-2xl skeleton"></div>
+          </template>
+        </div>
+
+        <!-- Empty Logs Handler -->
+        <div x-show="!loadingLogs && historyLogs.length === 0" class="text-center py-8 text-slate-400 dark:text-slate-600 space-y-2">
+          <i data-lucide="clipboard-x" class="w-10 h-10 mx-auto opacity-40"></i>
+          <p class="text-xs">Belum ada riwayat absensi terdaftar.</p>
+        </div>
+
+        <!-- List Timeline logs -->
+        <div x-show="!loadingLogs && historyLogs.length > 0" class="space-y-3 max-h-72 overflow-y-auto pr-1">
+          <template x-for="log in historyLogs" :key="log.id">
+            <div class="p-3 bg-white dark:bg-slate-900 border border-slate-100 dark:border-slate-800 rounded-2xl flex items-center justify-between gap-3 shadow-sm hover:border-slate-200/70 dark:hover:border-slate-800 transition">
+              <div class="flex items-center gap-3">
+                <div class="relative shrink-0 cursor-pointer" @click="showSelfiePreview(log.selfie_url)">
+                  <img :src="log.selfie_url" alt="Selfie" class="w-10 h-10 rounded-xl object-cover border border-slate-200 dark:border-slate-800">
+                  <div class="absolute inset-0 bg-slate-950/20 rounded-xl flex items-center justify-center opacity-0 hover:opacity-100 transition">
+                    <i data-lucide="eye" class="w-4 h-4 text-white"></i>
+                  </div>
+                </div>
+                <div>
+                  <h4 class="text-xs font-bold text-slate-900 dark:text-white" x-text="Helper.formatDateTime(log.tanggal)"></h4>
+                  <div class="flex gap-2.5 mt-0.5 text-[10px] text-slate-500 dark:text-slate-400 font-medium tabular-nums">
+                    <span>In: <strong class="text-slate-800 dark:text-slate-200" x-text="log.jam_masuk ? log.jam_masuk.substring(0, 5) : '--:--'"></strong></span>
+                    <span x-show="log.jam_pulang">Out: <strong class="text-slate-800 dark:text-slate-200" x-text="log.jam_pulang.substring(0, 5)"></strong></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Badge Statuses -->
+              <div>
+                <span 
+                  class="px-2.5 py-1 rounded-full text-[10px] font-bold"
+                  :class="{
+                    'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/10': log.status === 'Hadir' || log.status === 'Pulang',
+                    'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/10': log.status === 'Terlambat'
+                  }"
+                  x-text="log.status"
+                ></span>
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Camera capture selfie Overlay Modal -->
+  <div 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-md"
+    x-show="isCameraOpen"
+    x-cloak
+  >
+    <div class="glass-panel w-full max-w-sm rounded-3xl p-5 border border-white/20 dark:border-slate-800/80 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h4 class="font-bold text-sm text-slate-900 dark:text-white flex items-center gap-1.5">
+          <i data-lucide="camera" class="w-4 h-4 text-blue-500"></i> Ambil Foto Selfie
+        </h4>
+        <button @click="closeCameraModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Preview camera panel -->
+      <div class="relative aspect-square w-full rounded-2xl bg-black overflow-hidden border border-slate-200 dark:border-slate-800 shadow-inner flex items-center justify-center">
+        <!-- Live Video feed -->
+        <video 
+          id="cameraPreview" 
+          autoplay 
+          playsinline 
+          class="w-full h-full object-cover transform scale-x-[-1]"
+          x-show="!selfieData && !cameraLoading && !cameraError"
+        ></video>
+
+        <!-- Pre-captured static image frame -->
+        <img 
+          :src="selfieData" 
+          alt="Selfie snapshot" 
+          class="w-full h-full object-cover"
+          x-show="selfieData"
+        >
+
+        <!-- Canvas overlay for snap frame -->
+        <canvas id="captureCanvas" width="480" height="480" class="hidden"></canvas>
+
+        <!-- Camera loaders -->
+        <div x-show="cameraLoading" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-slate-900">
+          <span class="animate-spin rounded-full h-8 w-8 border-3 border-blue-500 border-t-transparent"></span>
+          <span class="text-xs text-slate-400 font-medium">Menghubungkan webcam...</span>
+        </div>
+
+        <!-- Camera Access Error Block -->
+        <div x-show="cameraError" class="absolute inset-0 p-4 flex flex-col items-center justify-center text-center bg-slate-900 text-rose-400 space-y-3">
+          <i data-lucide="alert-circle" class="w-8 h-8"></i>
+          <p class="text-xs" x-text="cameraError"></p>
+          <button @click="startCamera()" class="px-4 py-2 bg-rose-500 text-white rounded-xl text-xs font-semibold hover:bg-rose-600 transition">
+            Coba Lagi
+          </button>
+        </div>
+      </div>
+
+      <!-- Action buttons -->
+      <div class="flex items-center gap-3">
+        <!-- Close -->
+        <button 
+          @click="closeCameraModal()" 
+          class="flex-1 py-3 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-2xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          Batal
+        </button>
+
+        <!-- Capture snap -->
+        <button 
+          x-show="!selfieData"
+          @click="captureSelfie()"
+          :disabled="cameraLoading || cameraError"
+          class="flex-1 py-3 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-600/10 transition disabled:opacity-40"
+        >
+          Ambil Foto
+        </button>
+
+        <!-- Retake snap -->
+        <button 
+          x-show="selfieData"
+          @click="resetSelfie()"
+          class="flex-1 py-3 bg-amber-500 text-white rounded-2xl text-sm font-medium hover:bg-amber-600 transition"
+        >
+          Foto Ulang
+        </button>
+
+        <!-- Confirm Send -->
+        <button 
+          x-show="selfieData"
+          @click="submitAttendance($store.app.activeAction)"
+          class="flex-1 py-3 bg-emerald-600 text-white rounded-2xl text-sm font-bold hover:bg-emerald-700 shadow-md shadow-emerald-600/10 transition"
+        >
+          Kirim Absen
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Glassmorphic bottom navigation tabbar -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/75 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200/50 dark:border-slate-800/80 shadow-2xl py-3 px-6 max-w-lg mx-auto rounded-t-3xl no-print">
+    <div class="flex items-center justify-between">
+      <a href="dashboard.html" class="flex flex-col items-center gap-1 text-blue-600 dark:text-blue-400">
+        <i data-lucide="layout-dashboard" class="w-5.5 h-5.5"></i>
+        <span class="text-[10px] font-bold">Dashboard</span>
+      </a>
+      
+      <!-- Pull-to-refresh button manual triggers for comfort -->
+      <button @click="initWorkflow()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+        <i data-lucide="refresh-cw" class="w-5.5 h-5.5"></i>
+        <span class="text-[10px] font-medium">Sync Data</span>
+      </button>
+
+      <button @click="Auth.logout()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-rose-400 transition">
+        <i data-lucide="log-out" class="w-5.5 h-5.5"></i>
+        <span class="text-[10px] font-medium">Logout</span>
+      </button>
+    </div>
+  </nav>
+
+  <script>
+    let map = null;
+    let userMarker = null;
+    let officeCircle = null;
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+
+    // Modal popup to view high quality capture
+    function showSelfiePreview(url) {
+      if (!url) return;
+      Swal.fire({
+        imageUrl: url,
+        imageAlt: 'Foto Selfie Absensi',
+        customClass: {
+          popup: 'rounded-3xl glass-panel text-slate-800 dark:text-slate-100',
+          confirmButton: 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition'
+        },
+        confirmButtonText: 'Tutup',
+        buttonsStyling: false
+      });
+    }
+
+    // Leaflet map drawing observer mapping Alpine JS variables
+    window.addEventListener('alpine:init', () => {
+      // Create watch handles on Alpine component
+      const checkInterval = setInterval(() => {
+        const bodyEl = document.querySelector('body');
+        const alpineScope = Alpine.$data(bodyEl);
+        
+        if (alpineScope && alpineScope.latitude !== null && alpineScope.nearestLocation !== null) {
+          clearInterval(checkInterval);
+          
+          const userLat = alpineScope.latitude;
+          const userLng = alpineScope.longitude;
+          const officeLat = parseFloat(alpineScope.nearestLocation.office_lat);
+          const officeLng = parseFloat(alpineScope.nearestLocation.office_lng);
+          const radius = parseFloat(alpineScope.nearestLocation.radius);
+
+          // Setup Map instance
+          if (!map) {
+            map = L.map('map', { attributionControl: false }).setView([userLat, userLng], 16);
+            
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(map);
+
+            // Add office perimeter circle
+            officeCircle = L.circle([officeLat, officeLng], {
+              color: '#3b82f6',
+              fillColor: '#60a5fa',
+              fillOpacity: 0.15,
+              radius: radius
+            }).addTo(map);
+
+            // Add office building location pin
+            L.marker([officeLat, officeLng]).addTo(map)
+              .bindPopup(`<b>${alpineScope.nearestLocation.office_name}</b>`).openPopup();
+
+            // Add user pin marker
+            const redIcon = L.icon({
+              iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-red.png',
+              shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+              iconSize: [25, 41],
+              iconAnchor: [12, 41],
+              popupAnchor: [1, -34],
+              shadowSize: [41, 41]
+            });
+            
+            userMarker = L.marker([userLat, userLng], { icon: redIcon }).addTo(map)
+              .bindPopup('<b>Lokasi Anda</b>').openPopup();
+          }
+
+          // Reactive watch listeners
+          alpineScope.$watch('latitude', (newLat) => {
+            if (!newLat) return;
+            const newLng = alpineScope.longitude;
+            
+            if (userMarker) userMarker.setLatLng([newLat, newLng]);
+            if (map) map.setView([newLat, newLng]);
+          });
+
+          alpineScope.$watch('nearestLocation', (newLoc) => {
+            if (!newLoc || !officeCircle) return;
+            const oLat = parseFloat(newLoc.office_lat);
+            const oLng = parseFloat(newLoc.office_lng);
+            const rad = parseFloat(newLoc.radius);
+            
+            officeCircle.setLatLng([oLat, oLng]);
+            officeCircle.setRadius(rad);
+          });
+        }
+      }, 500);
+    });
+  </script>
+</body>
+</html>

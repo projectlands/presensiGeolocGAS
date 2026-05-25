@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Presensi Geolokasi - Login</title>
+  
+  <!-- PWA Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- CDN Links -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          borderRadius: {
+            '2xl': '1.25rem',
+            '3xl': '1.75rem',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- SweetAlert2 & Lucide -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- Application Core Assets -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/helper.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/app.js"></script>
+</head>
+<body class="bg-gradient-to-tr from-slate-50 to-blue-50 dark:from-slate-950 dark:to-slate-900 min-h-screen flex items-center justify-center p-4" x-data="authData">
+
+  <!-- Pull to Refresh Mobile Overlay (Hidden on Login) -->
+  <div id="pull-to-refresh-indicator" class="fixed top-0 left-1/2 transform -translate-x-1/2 -translate-y-[60px] opacity-0 transition-all duration-300 z-50 bg-white dark:bg-slate-800 shadow-lg rounded-full p-2.5 flex items-center gap-2 border border-slate-100 dark:border-slate-700">
+    <div class="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent"></div>
+    <span class="text-xs text-slate-600 dark:text-slate-300 font-medium">Refreshing...</span>
+  </div>
+
+  <!-- Route Protector Redirect Handler -->
+  <script>
+    if (Auth.isLoggedIn()) {
+      const user = Auth.getUser();
+      if (user.role === 'admin') {
+        window.location.href = 'admin.html';
+      } else {
+        window.location.href = 'dashboard.html';
+      }
+    }
+  </script>
+
+  <!-- Login Container -->
+  <div class="w-full max-w-md" x-cloak>
+    <!-- Brand Header -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center p-3.5 bg-blue-600/10 dark:bg-blue-500/15 rounded-3xl mb-4 border border-blue-200/20 shadow-inner">
+        <i data-lucide="map-pin" class="w-8 h-8 text-blue-600 dark:text-blue-400"></i>
+      </div>
+      <h1 class="text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">Presensi Geoloc</h1>
+      <p class="text-sm text-slate-500 dark:text-slate-400 mt-1.5">Sistem Absensi PWA Berbasis Lokasi & Selfie</p>
+    </div>
+
+    <!-- Login Glassmorphic Card -->
+    <div class="glass-panel rounded-3xl shadow-xl overflow-hidden p-8 border border-white/40 dark:border-slate-800 relative">
+      
+      <!-- Mock Mode Banner (Visible if running mock mode) -->
+      <div x-show="$store.app.isMockMode" class="mb-6 p-3 bg-amber-500/10 border border-amber-500/25 rounded-2xl flex items-start gap-2">
+        <i data-lucide="info" class="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse"></i>
+        <div class="text-xs text-amber-800 dark:text-amber-300">
+          <strong>Demo / Mock Mode Aktif.</strong> Masuk dengan:<br>
+          Admin: <code class="bg-amber-500/20 px-1 rounded font-bold">admin</code> / <code class="bg-amber-500/20 px-1 rounded">admin123</code><br>
+          User: <code class="bg-amber-500/20 px-1 rounded font-bold">user</code> / <code class="bg-amber-500/20 px-1 rounded">user123</code>
+        </div>
+      </div>
+
+      <div x-show="!$store.app.isMockMode" class="mb-6 p-3 bg-emerald-500/10 border border-emerald-500/25 rounded-2xl flex items-center gap-2">
+        <i data-lucide="check-circle" class="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0"></i>
+        <div class="text-xs text-emerald-800 dark:text-emerald-300 font-medium">
+          Terkoneksi ke Google Sheets Backend
+        </div>
+      </div>
+
+      <!-- Login Form -->
+      <form @submit.prevent="handleLogin" class="space-y-5">
+        <div>
+          <label for="username" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Username</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="user" class="w-5 h-5"></i>
+            </span>
+            <input 
+              type="text" 
+              id="username" 
+              x-model="username" 
+              placeholder="Masukkan username Anda" 
+              class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 dark:text-white transition duration-200"
+              required
+            >
+          </div>
+        </div>
+
+        <div>
+          <label for="password" class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Password</label>
+          <div class="relative" x-data="{ show: false }">
+            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+              <i data-lucide="lock" class="w-5 h-5"></i>
+            </span>
+            <input 
+              :type="show ? 'text' : 'password'" 
+              id="password" 
+              x-model="password" 
+              placeholder="Masukkan password Anda" 
+              class="w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 dark:text-white transition duration-200"
+              required
+            >
+            <button 
+              type="button" 
+              @click="show = !show" 
+              class="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+            >
+              <i :data-lucide="show ? 'eye-off' : 'eye'" class="w-5 h-5"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Remember Me & Reset Password mock -->
+        <div class="flex items-center justify-between">
+          <label class="flex items-center gap-2 cursor-pointer select-none group">
+            <input 
+              type="checkbox" 
+              x-model="rememberMe" 
+              class="w-4 h-4 text-blue-600 dark:text-blue-500 border-slate-300 dark:border-slate-700 rounded focus:ring-blue-500 focus:ring-2"
+            >
+            <span class="text-sm text-slate-600 dark:text-slate-400 group-hover:text-slate-800 dark:group-hover:text-slate-200 transition">Ingat Akun</span>
+          </label>
+          
+          <button 
+            type="button" 
+            @click="Helper.alert('Reset Password', 'Harap hubungi administrator kantor untuk melakukan reset password akun Anda.', 'info')" 
+            class="text-sm text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition"
+          >
+            Lupa Password?
+          </button>
+        </div>
+
+        <!-- Submit Button -->
+        <button 
+          type="submit" 
+          :disabled="loading"
+          class="w-full py-3.5 bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600 text-white rounded-2xl font-semibold shadow-lg shadow-blue-600/20 dark:shadow-none hover:shadow-xl hover:translate-y-[-1px] active:translate-y-[0px] focus:outline-none transition duration-200 disabled:opacity-50 disabled:pointer-events-none flex items-center justify-center gap-2"
+        >
+          <span x-show="!loading">Masuk Sekarang</span>
+          <span x-show="loading" class="animate-spin rounded-full h-5 w-5 border-2 border-white border-t-transparent"></span>
+        </button>
+      </form>
+    </div>
+
+    <!-- PWA Settings Floating Toggle Bar -->
+    <div class="flex items-center justify-between mt-6 px-4">
+      <p class="text-xs text-slate-400 dark:text-slate-500">v1.2.0 • Presensi Geoloc PWA</p>
+      
+      <div class="flex items-center gap-3">
+        <!-- Settings Gear button to edit URL -->
+        <button 
+          @click="openSettingsModal()" 
+          class="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800 transition"
+          title="Pengaturan Koneksi Backend"
+        >
+          <i data-lucide="settings" class="w-4.5 h-4.5"></i>
+        </button>
+        
+        <!-- Dark Mode Toggle Button -->
+        <button 
+          @click="$store.app.toggleDarkMode()" 
+          class="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800 transition"
+          title="Ubah Tema"
+        >
+          <i :data-lucide="$store.app.darkMode ? 'sun' : 'moon'" class="w-4.5 h-4.5"></i>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Settings Connection Modal -->
+  <div 
+    id="settingsModal" 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden"
+    x-data="{ tempUrl: '' }"
+  >
+    <div class="glass-panel w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-white/30 dark:border-slate-800">
+      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+        <div class="flex items-center gap-2">
+          <i data-lucide="database" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
+          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Pengaturan Koneksi API</h3>
+        </div>
+        <button @click="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="py-5 space-y-4">
+        <div>
+          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
+            URL Google Apps Script Web App
+          </label>
+          <textarea 
+            x-model="tempUrl" 
+            placeholder="https://script.google.com/macros/s/AKfycb.../exec" 
+            rows="3" 
+            class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white resize-none"
+          ></textarea>
+          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
+            Kosongkan URL di atas untuk beralih kembali ke <strong>Demo Mode (Local Storage)</strong>. Dalam Demo Mode, data absensi dan CRUD disimpan secara lokal pada browser ini.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
+        <button 
+          @click="closeSettingsModal()" 
+          class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          Batal
+        </button>
+        <button 
+          @click="saveSettings(tempUrl)" 
+          class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
+        >
+          Simpan Koneksi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Initialize Lucide Icons
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+
+    // Helper functions to open and close settings modal outside Alpine logic if needed
+    function openSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      const currentUrl = localStorage.getItem('presensi_gas_url') || '';
+      
+      // Seed temporary variable in modal
+      const alpineEl = Alpine.discoverUnusedData ? Alpine.discoverUnusedData(modal) : null;
+      if (modal) {
+        modal.classList.remove('hidden');
+        // Retrieve internal alpine scope to set tempUrl
+        const alpineScope = Alpine.$data(modal);
+        if (alpineScope) alpineScope.tempUrl = currentUrl;
+      }
+      setTimeout(() => lucide.createIcons(), 50);
+    }
+
+    function closeSettingsModal() {
+      const modal = document.getElementById('settingsModal');
+      if (modal) modal.classList.add('hidden');
+    }
+
+    function saveSettings(url) {
+      // Sync into Alpine app store
+      const appStore = Alpine.store('app');
+      appStore.setApiUrl(url);
+      closeSettingsModal();
+      
+      // Reload page to re-trigger connections
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+    }
+  </script>
+</body>
+</html>

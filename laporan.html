@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Presensi Geolokasi - Laporan Kehadiran</title>
+  
+  <!-- PWA Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- CDNs -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          borderRadius: {
+            '2xl': '1.25rem',
+            '3xl': '1.75rem',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- CDNs -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- Custom Assets -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/helper.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/app.js"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0" x-data="reportData">
+
+  <!-- Protection Script -->
+  <script>
+    Auth.checkProtection('admin');
+  </script>
+
+  <!-- Sidebar Desktop -->
+  <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-slate-100 min-h-screen p-5 shrink-0 border-r border-slate-800 no-print">
+    <!-- Brand Info -->
+    <div class="flex items-center gap-3.5 pb-6 border-b border-slate-800">
+      <div class="p-2 bg-blue-500 rounded-xl text-white">
+        <i data-lucide="map-pin" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-extrabold tracking-tight">Presensi Geoloc</h2>
+        <span class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Portal Admin</span>
+      </div>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="flex-1 py-6 space-y-2">
+      <a href="admin.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-250 hover:bg-slate-800/50 rounded-xl text-sm font-medium transition">
+        <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="laporan.html" class="flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-blue-600/10">
+        <i data-lucide="file-spreadsheet" class="w-4.5 h-4.5"></i>
+        <span>Laporan Kehadiran</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar footer -->
+    <div class="pt-6 border-t border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i data-lucide="user-cog" class="w-4 h-4 text-slate-400"></i>
+        <span class="text-xs text-slate-400 font-medium">Administrator</span>
+      </div>
+      <button @click="Auth.logout()" class="text-rose-400 hover:text-rose-300 transition" title="Log Out">
+        <i data-lucide="log-out" class="w-4.5 h-4.5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Shell Content Container -->
+  <div class="flex-1 flex flex-col min-w-0" x-cloak>
+    
+    <!-- Top Nav Header -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between no-print">
+      <div class="flex items-center gap-2.5">
+        <div class="md:hidden p-2.5 bg-blue-600/10 rounded-xl text-blue-600">
+          <i data-lucide="map-pin" class="w-5 h-5"></i>
+        </div>
+        <h1 class="text-lg font-extrabold text-slate-900 dark:text-white">Laporan Kehadiran</h1>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Dark Mode -->
+        <button 
+          @click="$store.app.toggleDarkMode()" 
+          class="p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-800 shadow-sm transition"
+        >
+          <i :data-lucide="$store.app.darkMode ? 'sun' : 'moon'" class="w-4.5 h-4.5 text-slate-600 dark:text-slate-300"></i>
+        </button>
+        
+        <button 
+          @click="Auth.logout()" 
+          class="md:hidden p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-800 shadow-sm transition text-rose-500"
+          title="Keluar"
+        >
+          <i data-lucide="log-out" class="w-4.5 h-4.5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-6 space-y-6 overflow-y-auto max-w-6xl w-full mx-auto">
+
+      <!-- Print layout header element -->
+      <div class="hidden print-only text-center pb-6 border-b border-slate-300 mb-6">
+        <h1 class="text-2xl font-black text-black">LAPORAN DATA KEHADIRAN KARYAWAN</h1>
+        <p class="text-xs text-slate-600 mt-1">Dicetak pada: <span x-text="Helper.formatDateTime(Helper.formatDate(new Date()), Helper.formatTime(new Date()))"></span></p>
+      </div>
+      
+      <!-- Query Filter Panel -->
+      <section class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-5 shadow-sm space-y-4 no-print">
+        <h3 class="font-bold text-xs text-slate-600 dark:text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+          <i data-lucide="sliders-horizontal" class="w-4 h-4"></i> Filter Laporan
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          <!-- Start Date -->
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tanggal Mulai</label>
+            <input 
+              type="date" 
+              x-model="startDate" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            >
+          </div>
+
+          <!-- End Date -->
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Tanggal Selesai</label>
+            <input 
+              type="date" 
+              x-model="endDate" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            >
+          </div>
+
+          <!-- User selector -->
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Filter Nama Karyawan</label>
+            <select 
+              x-model="selectedUser" 
+              class="w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            >
+              <option value="">Semua Karyawan</option>
+              <template x-for="user in users" :key="user.id">
+                <option :value="user.id" x-text="user.nama"></option>
+              </template>
+            </select>
+          </div>
+
+          <!-- Text search -->
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">Pencarian Realtime</label>
+            <div class="relative">
+              <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-400 pointer-events-none">
+                <i data-lucide="search" class="w-4 h-4"></i>
+              </span>
+              <input 
+                type="text" 
+                x-model="searchQuery" 
+                placeholder="Cari nama atau status..." 
+                class="w-full pl-9 pr-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+              >
+            </div>
+          </div>
+        </div>
+
+        <!-- Export tools row -->
+        <div class="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+          <button 
+            @click="triggerPrint()"
+            class="px-4 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-750 transition flex items-center gap-1.5"
+          >
+            <i data-lucide="printer" class="w-4 h-4"></i> Cetak Laporan
+          </button>
+          
+          <button 
+            @click="exportCsv()"
+            class="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-md shadow-emerald-600/10 transition flex items-center gap-1.5"
+          >
+            <i data-lucide="download" class="w-4 h-4"></i> Export CSV
+          </button>
+        </div>
+      </section>
+
+      <!-- Logs Worksheet Grid -->
+      <section class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-4">
+        
+        <!-- Table counts and summaries -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800 no-print">
+          <span class="text-xs text-slate-500 dark:text-slate-400 font-medium">
+            Menampilkan <strong class="text-slate-800 dark:text-slate-200" x-text="paginatedLogs.length"></strong> dari <strong class="text-slate-800 dark:text-slate-200" x-text="filteredLogs.length"></strong> total baris log absensi
+          </span>
+          
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-400 font-medium">Baris per halaman:</span>
+            <select x-model="pageSize" class="bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-750 px-2 py-1 rounded text-xs">
+              <option value="5">5</option>
+              <option value="10">10</option>
+              <option value="20">20</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- Table responsive box -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-150 dark:border-slate-850">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-150 dark:border-slate-850 uppercase font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+              <tr>
+                <th class="py-3.5 px-4 font-bold">Nama Karyawan</th>
+                <th class="py-3.5 px-4 font-bold">Tanggal</th>
+                <th class="py-3.5 px-4 font-bold">Masuk</th>
+                <th class="py-3.5 px-4 font-bold">Pulang</th>
+                <th class="py-3.5 px-4 font-bold">Lokasi</th>
+                <th class="py-3.5 px-4 font-bold">Jarak</th>
+                <th class="py-3.5 px-4 font-bold">Status</th>
+                <th class="py-3.5 px-4 font-bold text-center no-print">Selfie</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+              <template x-for="log in paginatedLogs" :key="log.id">
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850/50 transition">
+                  <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white" x-text="log.nama"></td>
+                  <td class="py-3.5 px-4 font-medium" x-text="Helper.formatDateTime(log.tanggal)"></td>
+                  <td class="py-3.5 px-4 font-mono text-emerald-600 dark:text-emerald-400 font-bold" x-text="log.jam_masuk || '--:--'"></td>
+                  <td class="py-3.5 px-4 font-mono text-blue-600 dark:text-blue-400 font-bold" x-text="log.jam_pulang || '--:--'"></td>
+                  <td class="py-3.5 px-4 text-slate-500 font-mono text-[10px] tracking-tight" x-text="`${parseFloat(log.latitude).toFixed(4)}, ${parseFloat(log.longitude).toFixed(4)}`"></td>
+                  <td class="py-3.5 px-4 font-mono" x-text="`${log.jarak} m`"></td>
+                  <td>
+                    <span 
+                      class="px-2.5 py-0.5 rounded-full text-[10px] font-bold"
+                      :class="{
+                        'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/10': log.status === 'Hadir' || log.status === 'Pulang',
+                        'bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/10': log.status === 'Terlambat'
+                      }"
+                      x-text="log.status"
+                    ></span>
+                  </td>
+                  <td class="py-3 text-center no-print">
+                    <button 
+                      @click="showSelfiePreview(log.selfie_url)"
+                      class="inline-block p-1 bg-slate-50 dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 shadow-sm hover:border-slate-350 dark:hover:border-slate-600 transition shrink-0"
+                      title="Lihat Selfie"
+                    >
+                      <img :src="log.selfie_url" alt="Selfie thumbnail" class="w-8 h-8 rounded object-cover">
+                    </button>
+                  </td>
+                </tr>
+              </template>
+
+              <!-- Skeleton Loader while query fetching -->
+              <tr x-show="loading">
+                <td colspan="8" class="text-center py-10">
+                  <div class="flex items-center justify-center gap-2">
+                    <span class="animate-spin rounded-full h-5 w-5 border-2 border-blue-500 border-t-transparent"></span>
+                    <span class="text-slate-500 dark:text-slate-400 text-xs">Menyaring data absensi...</span>
+                  </div>
+                </td>
+              </tr>
+
+              <!-- Empty state table row -->
+              <tr x-show="!loading && paginatedLogs.length === 0">
+                <td colspan="8" class="text-center py-12 text-slate-400 dark:text-slate-600 space-y-2">
+                  <i data-lucide="clipboard-x" class="w-10 h-10 mx-auto opacity-30"></i>
+                  <p class="text-xs">Tidak ditemukan riwayat log absensi mencakup kriteria pencarian.</p>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination Action controllers -->
+        <div x-show="totalPages > 1 && !loading" class="flex items-center justify-between pt-4 border-t border-slate-100 dark:border-slate-800 no-print">
+          <button 
+            @click="prevPage()"
+            :disabled="currentPage === 1"
+            class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Sebelumnya
+          </button>
+          
+          <span class="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            Halaman <span class="text-slate-800 dark:text-slate-200 font-bold" x-text="currentPage"></span> dari <span class="text-slate-800 dark:text-slate-200 font-bold" x-text="totalPages"></span>
+          </span>
+
+          <button 
+            @click="nextPage()"
+            :disabled="currentPage === totalPages"
+            class="px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Berikutnya
+          </button>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Bottom Navigation mobile tabbar -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/75 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200/50 dark:border-slate-800/80 shadow-2xl py-3 px-6 md:hidden flex items-center justify-between no-print">
+    <a href="admin.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-650 dark:hover:text-slate-200 transition">
+      <i data-lucide="layout-dashboard" class="w-5.5 h-5.5"></i>
+      <span class="text-[10px] font-medium">Dashboard</span>
+    </a>
+    
+    <a href="laporan.html" class="flex flex-col items-center gap-1 text-blue-600 dark:text-blue-400">
+      <i data-lucide="file-spreadsheet" class="w-5.5 h-5.5"></i>
+      <span class="text-[10px] font-bold">Laporan</span>
+    </a>
+
+    <button @click="Auth.logout()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-500 transition">
+      <i data-lucide="log-out" class="w-5.5 h-5.5"></i>
+      <span class="text-[10px] font-medium">Logout</span>
+    </button>
+  </nav>
+
+  <script>
+    document.addEventListener('alpine:init', () => {
+      Alpine.data('reportData', () => ({
+        logs: [],
+        users: [],
+        loading: false,
+
+        // Filters
+        startDate: '',
+        endDate: '',
+        selectedUser: '',
+        searchQuery: '',
+
+        // Pagination
+        currentPage: 1,
+        pageSize: 10,
+
+        async init() {
+          this.loading = true;
+          try {
+            await this.loadUsersList();
+            await this.loadAttendanceLogs();
+            
+            // Set default date range filters (current month)
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            this.startDate = `${year}-${month}-01`;
+            
+            // Get end date
+            const lastDay = new Date(year, d.getMonth() + 1, 0).getDate();
+            this.endDate = `${year}-${month}-${String(lastDay).padStart(2, '0')}`;
+          } catch (err) {
+            console.error(err);
+          } finally {
+            this.loading = false;
+          }
+
+          // Trigger pull to refresh data sync
+          window.addEventListener('refresh-app-data', () => {
+            this.loadAttendanceLogs();
+          });
+        },
+
+        async loadUsersList() {
+          const res = await ApiService.getUsers();
+          if (res.success) {
+            this.users = res.data;
+          }
+        },
+
+        async loadAttendanceLogs() {
+          this.loading = true;
+          try {
+            const res = await ApiService.getAttendance();
+            if (res.success) {
+              // Sort logs chronologically reverse (newest first)
+              this.logs = res.data.sort((a, b) => new Date(b.tanggal) - new Date(a.tanggal));
+            }
+          } catch (err) {
+            console.error(err);
+          } finally {
+            this.loading = false;
+          }
+        },
+
+        // Reactive filter algorithm
+        get filteredLogs() {
+          return this.logs.filter(log => {
+            // 1. Date Range
+            if (this.startDate && log.tanggal < this.startDate) return false;
+            if (this.endDate && log.tanggal > this.endDate) return false;
+
+            // 2. User drop down
+            if (this.selectedUser && log.user_id !== this.selectedUser) return false;
+
+            // 3. Search query match
+            if (this.searchQuery) {
+              const query = this.searchQuery.toLowerCase();
+              const nameMatch = log.nama.toLowerCase().includes(query);
+              const statusMatch = log.status.toLowerCase().includes(query);
+              const dateMatch = log.tanggal.toLowerCase().includes(query);
+              return nameMatch || statusMatch || dateMatch;
+            }
+
+            return true;
+          });
+        },
+
+        // Paginated rows mapping
+        get paginatedLogs() {
+          const startIdx = (this.currentPage - 1) * parseInt(this.pageSize);
+          const endIdx = startIdx + parseInt(this.pageSize);
+          return this.filteredLogs.slice(startIdx, endIdx);
+        },
+
+        get totalPages() {
+          return Math.ceil(this.filteredLogs.length / parseInt(this.pageSize)) || 1;
+        },
+
+        prevPage() {
+          if (this.currentPage > 1) this.currentPage--;
+        },
+
+        nextPage() {
+          if (this.currentPage < this.totalPages) this.currentPage++;
+        },
+
+        // SweetAlert image popup previewer
+        showSelfiePreview(url) {
+          if (!url) return;
+          Swal.fire({
+            imageUrl: url,
+            imageAlt: 'Foto Selfie Karyawan',
+            customClass: {
+              popup: 'rounded-3xl glass-panel text-slate-800 dark:text-slate-100',
+              confirmButton: 'px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-medium transition'
+            },
+            confirmButtonText: 'Tutup',
+            buttonsStyling: false
+          });
+        },
+
+        // Trigger native browser printing
+        triggerPrint() {
+          window.print();
+        },
+
+        // Automated CSV file compiler
+        exportCsv() {
+          if (this.filteredLogs.length === 0) {
+            Helper.alert('Tidak ada data', 'Tidak ada baris absensi untuk diekspor.', 'warning');
+            return;
+          }
+
+          let csvContent = 'data:text/csv;charset=utf-8,';
+          // Header
+          csvContent += 'Nama,Tanggal,Jam Masuk,Jam Pulang,Latitude,Longitude,Jarak (m),Status\n';
+
+          // Compile rows
+          this.filteredLogs.forEach(log => {
+            const row = [
+              `"${log.nama}"`,
+              `"${log.tanggal}"`,
+              `"${log.jam_masuk || ''}"`,
+              `"${log.jam_pulang || ''}"`,
+              `"${log.latitude}"`,
+              `"${log.longitude}"`,
+              `"${log.jarak}"`,
+              `"${log.status}"`
+            ].join(',');
+            csvContent += row + '\n';
+          });
+
+          // Trigger download anchor
+          const encodedUri = encodeURI(csvContent);
+          const link = document.createElement('a');
+          link.setAttribute('href', encodedUri);
+          link.setAttribute('download', `Laporan_Absensi_${this.startDate}_sd_${this.endDate}.csv`);
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+
+          Helper.Toast.fire({
+            icon: 'success',
+            title: 'Laporan berhasil diekspor ke CSV!'
+          });
+        }
+      }));
+    });
+
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>

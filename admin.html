@@ -1,0 +1,513 @@
+<!DOCTYPE html>
+<html lang="id" class="scroll-smooth">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Presensi Geolokasi - Admin Panel</title>
+  
+  <!-- PWA Tags -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#2563eb">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  
+  <!-- CDNs -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          borderRadius: {
+            '2xl': '1.25rem',
+            '3xl': '1.75rem',
+          }
+        }
+      }
+    }
+  </script>
+  
+  <!-- Leaflet Map CSS/JS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- SweetAlert, Lucide, Axios, Alpine -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+  
+  <!-- Custom Assets -->
+  <link rel="stylesheet" href="assets/css/style.css">
+  <script src="assets/js/helper.js"></script>
+  <script src="assets/js/api.js"></script>
+  <script src="assets/js/auth.js"></script>
+  <script src="assets/js/admin.js"></script>
+  <script src="assets/js/app.js"></script>
+</head>
+<body class="bg-slate-50 dark:bg-slate-950 text-slate-800 dark:text-slate-100 min-h-screen flex flex-col md:flex-row pb-20 md:pb-0" x-data="adminData">
+
+  <!-- Protection Script -->
+  <script>
+    Auth.checkProtection('admin');
+  </script>
+
+  <!-- Sidebar Desktop -->
+  <aside class="hidden md:flex flex-col w-64 bg-slate-900 text-slate-100 min-h-screen p-5 shrink-0 border-r border-slate-800 no-print">
+    <!-- Brand Info -->
+    <div class="flex items-center gap-3.5 pb-6 border-b border-slate-800">
+      <div class="p-2 bg-blue-500 rounded-xl text-white">
+        <i data-lucide="map-pin" class="w-6 h-6"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-extrabold tracking-tight">Presensi Geoloc</h2>
+        <span class="text-[10px] text-slate-400 font-semibold tracking-wider uppercase">Portal Admin</span>
+      </div>
+    </div>
+
+    <!-- Nav Links -->
+    <nav class="flex-1 py-6 space-y-2">
+      <a href="admin.html" class="flex items-center gap-3 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-sm font-semibold transition shadow-md shadow-blue-600/10">
+        <i data-lucide="layout-dashboard" class="w-4.5 h-4.5"></i>
+        <span>Dashboard</span>
+      </a>
+      <a href="laporan.html" class="flex items-center gap-3 px-4 py-3 text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 rounded-xl text-sm font-medium transition">
+        <i data-lucide="file-spreadsheet" class="w-4.5 h-4.5"></i>
+        <span>Laporan Kehadiran</span>
+      </a>
+    </nav>
+
+    <!-- Sidebar footer -->
+    <div class="pt-6 border-t border-slate-800 flex items-center justify-between">
+      <div class="flex items-center gap-2">
+        <i data-lucide="user-cog" class="w-4 h-4 text-slate-400"></i>
+        <span class="text-xs text-slate-400 font-medium">Administrator</span>
+      </div>
+      <button @click="Auth.logout()" class="text-rose-400 hover:text-rose-300 transition" title="Log Out">
+        <i data-lucide="log-out" class="w-4.5 h-4.5"></i>
+      </button>
+    </div>
+  </aside>
+
+  <!-- Shell Content Container -->
+  <div class="flex-1 flex flex-col min-w-0" x-cloak>
+    
+    <!-- Top Nav Header -->
+    <header class="bg-white dark:bg-slate-900 border-b border-slate-200/50 dark:border-slate-800/80 px-6 py-4 flex items-center justify-between no-print">
+      <div class="flex items-center gap-2.5">
+        <div class="md:hidden p-2.5 bg-blue-600/10 rounded-xl text-blue-600">
+          <i data-lucide="map-pin" class="w-5 h-5"></i>
+        </div>
+        <h1 class="text-lg font-extrabold text-slate-900 dark:text-white">Admin Dashboard</h1>
+      </div>
+
+      <div class="flex items-center gap-3">
+        <!-- Dark Mode -->
+        <button 
+          @click="$store.app.toggleDarkMode()" 
+          class="p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-800 shadow-sm transition"
+        >
+          <i :data-lucide="$store.app.darkMode ? 'sun' : 'moon'" class="w-4.5 h-4.5 text-slate-600 dark:text-slate-300"></i>
+        </button>
+        
+        <button 
+          @click="Auth.logout()" 
+          class="md:hidden p-2.5 rounded-2xl bg-slate-50 hover:bg-slate-100 dark:bg-slate-800 dark:hover:bg-slate-700/80 border border-slate-200/50 dark:border-slate-800 shadow-sm transition text-rose-500"
+          title="Keluar"
+        >
+          <i data-lucide="log-out" class="w-4.5 h-4.5"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Main Workspace -->
+    <main class="flex-1 p-6 space-y-6 overflow-y-auto max-w-6xl w-full mx-auto">
+      
+      <!-- Mock Mode Info Bar -->
+      <div x-show="$store.app.isMockMode" class="p-4 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 shadow-sm no-print">
+        <div class="flex gap-2.5 items-start">
+          <i data-lucide="shield-alert" class="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5 animate-pulse"></i>
+          <div>
+            <h4 class="text-xs font-bold text-amber-800 dark:text-amber-400">Mode Demonstrasi Aktif</h4>
+            <p class="text-[11px] text-amber-700 dark:text-amber-300 mt-0.5">Semua data disimpan di LocalStorage browser ini. Anda dapat menyambungkan Google Sheets dengan mengisi URL Web App di halaman Login.</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Summary Stats Grid -->
+      <section class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <!-- Card 1 -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm space-y-2">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Karyawan</span>
+            <i data-lucide="users" class="w-5 h-5 text-blue-500"></i>
+          </div>
+          <h2 class="text-3xl font-black text-slate-950 dark:text-white tracking-tight tabular-nums" x-text="totalUsers"></h2>
+        </div>
+
+        <!-- Card 2 -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm space-y-2">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Hadir Hari Ini</span>
+            <i data-lucide="user-check" class="w-5 h-5 text-emerald-500"></i>
+          </div>
+          <h2 class="text-3xl font-black text-slate-950 dark:text-white tracking-tight tabular-nums" x-text="presentToday"></h2>
+        </div>
+
+        <!-- Card 3 -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm space-y-2">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Keterlambatan</span>
+            <i data-lucide="clock-alert" class="w-5 h-5 text-amber-500"></i>
+          </div>
+          <h2 class="text-3xl font-black text-slate-950 dark:text-white tracking-tight tabular-nums" x-text="lateToday"></h2>
+        </div>
+
+        <!-- Card 4 -->
+        <div class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 p-5 rounded-3xl shadow-sm space-y-2">
+          <div class="flex items-center justify-between text-slate-400">
+            <span class="text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Rasio Kehadiran</span>
+            <i data-lucide="percent" class="w-5 h-5 text-indigo-500"></i>
+          </div>
+          <h2 class="text-3xl font-black text-slate-950 dark:text-white tracking-tight tabular-nums" x-text="`${attendanceRate}%`"></h2>
+        </div>
+      </section>
+
+      <!-- Location Configuration Area -->
+      <section class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="map-pin" class="w-5 h-5 text-blue-500"></i> Manajemen Multi-Lokasi Absensi
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Atur radius valid dan koordinat pusat operasional cabang.</p>
+          </div>
+          <button 
+            @click="openAddLocation()" 
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-600/10 transition flex items-center gap-1.5"
+          >
+            <i data-lucide="plus" class="w-4 h-4"></i> Tambah Lokasi
+          </button>
+        </div>
+
+        <!-- Locations List Card Grid -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <template x-for="loc in locations" :key="loc.location_id">
+            <div class="p-4 bg-slate-50 dark:bg-slate-900/60 border border-slate-200/60 dark:border-slate-800/80 rounded-2xl flex justify-between items-start gap-3 hover:border-slate-300 dark:hover:border-slate-700 transition">
+              <div class="space-y-1.5">
+                <h4 class="text-sm font-bold text-slate-900 dark:text-white" x-text="loc.office_name"></h4>
+                <div class="space-y-0.5 text-[11px] text-slate-500 dark:text-slate-400 font-medium font-mono">
+                  <div>Lat: <span x-text="parseFloat(loc.office_lat).toFixed(6)"></span></div>
+                  <div>Lng: <span x-text="parseFloat(loc.office_lng).toFixed(6)"></span></div>
+                  <div class="mt-1 flex items-center gap-1">
+                    <span class="inline-block px-1.5 py-0.5 bg-blue-600/10 text-blue-600 dark:text-blue-400 rounded-md font-bold" x-text="`Radius ${loc.radius} m`"></span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Location Action buttons -->
+              <div class="flex items-center gap-1.5 shrink-0">
+                <button 
+                  @click="openEditLocation(loc)" 
+                  class="p-2 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-200/50 dark:hover:bg-slate-800 rounded-lg transition"
+                  title="Ubah Parameter"
+                >
+                  <i data-lucide="edit-2" class="w-4 h-4"></i>
+                </button>
+                <button 
+                  @click="deleteLocation(loc)" 
+                  class="p-2 text-rose-500 hover:text-rose-700 hover:bg-rose-500/10 rounded-lg transition"
+                  title="Hapus Lokasi"
+                >
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
+          </template>
+        </div>
+      </section>
+
+      <!-- Users Grid Worksheets -->
+      <section class="bg-white dark:bg-slate-900 border border-slate-200/50 dark:border-slate-800/80 rounded-3xl p-6 shadow-sm space-y-5">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
+          <div>
+            <h3 class="text-base font-extrabold text-slate-900 dark:text-white flex items-center gap-2">
+              <i data-lucide="users-round" class="w-5 h-5 text-blue-500"></i> Akun Pengguna / Karyawan
+            </h3>
+            <p class="text-xs text-slate-500 dark:text-slate-400 mt-1">Daftar akun staf yang diperbolehkan masuk ke aplikasi absensi.</p>
+          </div>
+          <button 
+            @click="openAddUser()" 
+            class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-600/10 transition flex items-center gap-1.5"
+          >
+            <i data-lucide="user-plus" class="w-4 h-4"></i> Registrasi User
+          </button>
+        </div>
+
+        <!-- Table responsive design -->
+        <div class="overflow-x-auto rounded-2xl border border-slate-150 dark:border-slate-850">
+          <table class="w-full text-left text-xs border-collapse">
+            <thead class="bg-slate-50 dark:bg-slate-900 border-b border-slate-150 dark:border-slate-850 uppercase font-semibold text-slate-500 dark:text-slate-400 tracking-wider">
+              <tr>
+                <th class="py-3.5 px-4 font-bold">UID</th>
+                <th class="py-3.5 px-4 font-bold">Nama Staf</th>
+                <th class="py-3.5 px-4 font-bold">Username</th>
+                <th class="py-3.5 px-4 font-bold">Role</th>
+                <th class="py-3.5 px-4 font-bold">Status</th>
+                <th class="py-3.5 px-4 font-bold text-center">Tindakan</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100 dark:divide-slate-800/80">
+              <template x-for="user in users" :key="user.id">
+                <tr class="hover:bg-slate-50/50 dark:hover:bg-slate-850 transition">
+                  <td class="py-3.5 px-4 font-mono font-bold text-slate-500" x-text="user.id"></td>
+                  <td class="py-3.5 px-4 font-bold text-slate-900 dark:text-white" x-text="user.nama"></td>
+                  <td class="py-3.5 px-4 text-slate-600 dark:text-slate-300" x-text="user.username"></td>
+                  <td>
+                    <span 
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold tracking-wide uppercase"
+                      :class="user.role === 'admin' ? 'bg-blue-600/10 text-blue-600 border border-blue-600/10' : 'bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300'"
+                      x-text="user.role"
+                    ></span>
+                  </td>
+                  <td>
+                    <span 
+                      class="px-2 py-0.5 rounded-full text-[10px] font-bold"
+                      :class="user.status === 'aktif' ? 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/10' : 'bg-rose-500/10 text-rose-700 dark:text-rose-400 border border-rose-500/10'"
+                      x-text="user.status === 'aktif' ? 'Aktif' : 'Nonaktif'"
+                    ></span>
+                  </td>
+                  <td class="py-3.5 px-4">
+                    <div class="flex items-center justify-center gap-1">
+                      <button 
+                        @click="openEditUser(user)" 
+                        class="p-1.5 text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition"
+                        title="Edit User"
+                      >
+                        <i data-lucide="pencil" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button 
+                        @click="resetPassword(user)" 
+                        class="p-1.5 text-amber-500 hover:text-amber-700 hover:bg-amber-500/10 rounded-lg transition"
+                        title="Reset Password"
+                      >
+                        <i data-lucide="key-round" class="w-3.5 h-3.5"></i>
+                      </button>
+                      <button 
+                        @click="deleteUser(user)" 
+                        class="p-1.5 text-rose-500 hover:text-rose-750 hover:bg-rose-500/10 rounded-lg transition"
+                        title="Hapus Akun"
+                      >
+                        <i data-lucide="user-x" class="w-3.5 h-3.5"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </template>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- User Creation/Edition Modal -->
+  <div 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+    x-show="showUserModal"
+    x-cloak
+  >
+    <div class="glass-panel w-full max-w-md rounded-3xl p-6 border border-white/20 dark:border-slate-800/80 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-slate-900 dark:text-white" x-text="modalTitle"></h3>
+        <button @click="showUserModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Nama Lengkap</label>
+          <input 
+            type="text" 
+            x-model="nama" 
+            placeholder="Masukkan nama staf" 
+            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            required
+          >
+        </div>
+
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Username Login</label>
+          <input 
+            type="text" 
+            x-model="username" 
+            placeholder="Masukkan username" 
+            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            required
+          >
+        </div>
+
+        <!-- Password (Required only on creation) -->
+        <div x-show="!userId">
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Password Akun</label>
+          <input 
+            type="text" 
+            x-model="password" 
+            placeholder="Masukkan password awal" 
+            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            :required="!userId"
+          >
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Hak Akses Role</label>
+            <select 
+              x-model="role" 
+              class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            >
+              <option value="user">User (Staf)</option>
+              <option value="admin">Admin</option>
+            </select>
+          </div>
+
+          <div>
+            <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Status Akun</label>
+            <select 
+              x-model="status" 
+              class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            >
+              <option value="aktif">Aktif</option>
+              <option value="nonaktif">Nonaktif</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <button 
+          @click="showUserModal = false" 
+          class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          Batal
+        </button>
+        <button 
+          @click="saveUser()" 
+          class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-600/10"
+        >
+          Simpan User
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Location Parameter Picker Map Modal -->
+  <div 
+    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/70 backdrop-blur-sm"
+    x-show="showLocationModal"
+    x-cloak
+  >
+    <div class="glass-panel w-full max-w-lg rounded-3xl p-6 border border-white/20 dark:border-slate-800/80 shadow-2xl space-y-4">
+      <div class="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+        <h3 class="font-bold text-sm text-slate-900 dark:text-white" x-text="locModalTitle"></h3>
+        <button @click="showLocationModal = false" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="space-y-4 text-left">
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Nama Lokasi / Kantor</label>
+          <input 
+            type="text" 
+            x-model="officeName" 
+            placeholder="Contoh: Balisai HQ (Sanur)" 
+            class="w-full px-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs"
+            required
+          >
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Latitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              x-model="officeLat" 
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs font-mono"
+              required
+            >
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Longitude</label>
+            <input 
+              type="number" 
+              step="any" 
+              x-model="officeLng" 
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs font-mono"
+              required
+            >
+          </div>
+          <div>
+            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Radius (Meter)</label>
+            <input 
+              type="number" 
+              x-model="radius" 
+              class="w-full px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white text-xs font-mono"
+              required
+            >
+          </div>
+        </div>
+
+        <!-- Draggable Picker map box -->
+        <div>
+          <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
+            Sesuaikan Lokasi (Klik Peta / Seret Pin)
+          </label>
+          <div id="pickerMap" class="w-full h-44 rounded-2xl border border-slate-200 dark:border-slate-800"></div>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+        <button 
+          @click="showLocationModal = false" 
+          class="flex-1 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-xs font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition"
+        >
+          Batal
+        </button>
+        <button 
+          @click="saveLocation()" 
+          class="flex-1 py-2.5 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition shadow-md shadow-blue-600/10"
+        >
+          Simpan Lokasi
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom Navigation mobile tabbar -->
+  <nav class="fixed bottom-0 left-0 right-0 z-40 bg-white/75 dark:bg-slate-900/80 backdrop-blur-lg border-t border-slate-200/50 dark:border-slate-800/80 shadow-2xl py-3 px-6 md:hidden flex items-center justify-between no-print">
+    <a href="admin.html" class="flex flex-col items-center gap-1 text-blue-600 dark:text-blue-400">
+      <i data-lucide="layout-dashboard" class="w-5.5 h-5.5"></i>
+      <span class="text-[10px] font-bold">Dashboard</span>
+    </a>
+    
+    <a href="laporan.html" class="flex flex-col items-center gap-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
+      <i data-lucide="file-spreadsheet" class="w-5.5 h-5.5"></i>
+      <span class="text-[10px] font-medium">Laporan</span>
+    </a>
+
+    <button @click="Auth.logout()" class="flex flex-col items-center gap-1 text-slate-400 hover:text-rose-500 transition">
+      <i data-lucide="log-out" class="w-5.5 h-5.5"></i>
+      <span class="text-[10px] font-medium">Logout</span>
+    </button>
+  </nav>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      lucide.createIcons();
+    });
+  </script>
+</body>
+</html>
