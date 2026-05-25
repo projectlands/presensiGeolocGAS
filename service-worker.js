@@ -52,6 +52,9 @@ self.addEventListener('fetch', (event) => {
   // Only handle standard GET requests (e.g. static assets, images)
   if (event.request.method !== 'GET') return;
 
+  // Ignore non-http/https requests (like chrome-extension://)
+  if (!event.request.url.startsWith('http')) return;
+
   event.respondWith(
     fetch(event.request)
       .then((networkResponse) => {
