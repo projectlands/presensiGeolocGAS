@@ -136,6 +136,7 @@ document.addEventListener('alpine:init', () => {
           if (mockCheck.spoofed) {
             this.gpsError = mockCheck.reason;
             this.isValidRadius = false;
+            this.gpsLoading = false;
             return;
           }
 
@@ -145,6 +146,7 @@ document.addEventListener('alpine:init', () => {
             if (speedCheck.anomaly) {
               this.gpsError = speedCheck.reason;
               this.isValidRadius = false;
+              this.gpsLoading = false;
               return;
             }
           }
@@ -153,9 +155,12 @@ document.addEventListener('alpine:init', () => {
           this.latitude = position.coords.latitude;
           this.longitude = position.coords.longitude;
           this.accuracy = position.coords.accuracy;
+          this.gpsError = ''; // Clear any previous GPS errors on success
 
           // Map nearest target branch automatically
           this.evaluateProximity();
+          
+          this.gpsLoading = false;
         },
         (error) => {
           console.error('GPS Watch Error:', error);
