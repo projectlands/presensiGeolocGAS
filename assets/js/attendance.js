@@ -216,8 +216,13 @@ document.addEventListener('alpine:init', () => {
 
       // Validate threshold radius AND operational day
       if (isClosestWfh) {
-        this.isValidRadius = true;
-        this.gpsError = `Mode WFH Aktif: Anda terhubung ke lokasi ${closestLoc.office_name} (Bebas Radius).`;
+        if (isTodayActive) {
+          this.isValidRadius = true;
+          this.gpsError = `Mode WFH Aktif: Anda terhubung ke lokasi ${closestLoc.office_name} (Bebas Radius).`;
+        } else {
+          this.isValidRadius = false;
+          this.gpsError = `Absensi WFH (${closestLoc.office_name}) tidak aktif hari ini (${currentDayName}). Hari aktif WFH: ${activeDaysStr}.`;
+        }
       } else if (minDistance <= closestLoc.radius) {
         if (isTodayActive) {
           this.isValidRadius = true;
@@ -228,8 +233,16 @@ document.addEventListener('alpine:init', () => {
         }
       } else {
         // Outside the radius of the physically closest location.
-        // Check if there is any other assigned location that has is_wfh active!
-        const wfhLoc = this.locations.find(loc => loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true);
+        // Check if there is any other assigned location that has is_wfh active and is active today!
+        const wfhLoc = this.locations.find(loc => {
+          const isWfh = loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true;
+          if (!isWfh) return false;
+          
+          // Check if WFH location is active today
+          const activeDaysStr = loc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
+          const activeDaysArr = activeDaysStr.split(',').map(d => d.trim());
+          return activeDaysArr.includes(currentDayName);
+        });
         
         if (wfhLoc) {
           this.nearestLocation = wfhLoc;
@@ -280,6 +293,20 @@ document.addEventListener('alpine:init', () => {
       this.cameraLoading = true;
       this.isCameraOpen = true;
 
+      // Diagnostics check for Secure Context (HTTPS/Localhost) & MediaDevices capability
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+      if (!isLocalhost && window.location.protocol !== 'https:') {
+        this.cameraError = 'Akses kamera diblokir karena koneksi tidak aman (HTTP). Silakan buka dashboard menggunakan HTTPS.';
+        this.cameraLoading = false;
+        return;
+      }
+
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        this.cameraError = 'Fitur kamera tidak didukung atau dinonaktifkan di browser ini. Gunakan Chrome/Safari dengan izin aktif.';
+        this.cameraLoading = false;
+        return;
+      }
+
       // Small delay to let modal open and canvas render
       await new Promise(resolve => setTimeout(resolve, 300));
 
@@ -297,7 +324,18 @@ document.addEventListener('alpine:init', () => {
           this.stopCamera();
         }
 
-        const stream = await navigator.mediaDevices.getUserMedia(constraints);
+        let stream;
+        try {
+          // Attempt standard ideal constraints
+          stream = await navigator.mediaDevices.getUserMedia(constraints);
+        } catch (err) {
+          console.warn('Ideal WebRTC constraints failed, attempting fallback...', err);
+          // Permissive fallback video-only stream
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: { facingMode: 'user' },
+            audio: false
+          });
+        }
         this.videoStream = stream;
         
         const videoEl = document.getElementById('cameraPreview');
@@ -328,6 +366,9 @@ document.addEventListener('alpine:init', () => {
       if (!videoEl || !canvasEl) return;
 
       const context = canvasEl.getContext('2d');
+      // Reset transform context first to avoid cumulative transforms on retakes
+      context.setTransform(1, 0, 0, 1, 0, 0);
+      
       // Mirror front camera
       context.translate(canvasEl.width, 0);
       context.scale(-1, 1);
