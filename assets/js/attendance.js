@@ -403,11 +403,45 @@ document.addEventListener('alpine:init', () => {
       this.selfieData = null;
     },
 
+    async triggerAttendanceAction(type) {
+      const activeLoc = this.nearestLocation;
+      const isPhotoRequired = !activeLoc || activeLoc.required_photo === 'ya' || activeLoc.required_photo === 'true' || activeLoc.required_photo === true;
+
+      if (isPhotoRequired) {
+        Alpine.store('app').activeAction = type;
+        this.startCamera();
+      } else {
+        // Direct Presensi without Camera
+        const confirm = await Swal.fire({
+          title: `Kirim Presensi ${type === 'masuk' ? 'Masuk' : 'Pulang'}?`,
+          text: `Anda terhubung ke lokasi ${activeLoc.office_name} (Bebas Foto). Kirim data absensi sekarang?`,
+          icon: 'question',
+          showCancelButton: true,
+          confirmButtonText: 'Ya, Kirim',
+          cancelButtonText: 'Batal',
+          customClass: {
+            popup: 'rounded-2xl glass-panel text-slate-800 dark:text-slate-100',
+            confirmButton: 'px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-sm font-medium transition mr-2',
+            cancelButton: 'px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium transition'
+          },
+          buttonsStyling: false
+        });
+
+        if (!confirm.isConfirmed) return;
+
+        this.selfieData = ''; // Empty selfie
+        await this.submitAttendance(type);
+      }
+    },
+
     /**
      * Save Check-in or Check-out attendance
      */
     async submitAttendance(type) {
-      if (!this.selfieData) {
+      const activeLoc = this.nearestLocation;
+      const isPhotoRequired = !activeLoc || activeLoc.required_photo === 'ya' || activeLoc.required_photo === 'true' || activeLoc.required_photo === true;
+
+      if (isPhotoRequired && !this.selfieData) {
         Helper.alert('Selfie Diperlukan', 'Harap lakukan foto selfie terlebih dahulu sebelum absensi!', 'warning');
         return;
       }

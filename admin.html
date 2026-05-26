@@ -245,6 +245,12 @@
                       <template x-if="loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true">
                         <span class="px-1.5 py-0.5 bg-purple-500/10 text-purple-700 dark:text-purple-400 rounded font-bold">WFH (Bebas Radius)</span>
                       </template>
+                      <template x-if="loc.required_photo === 'tidak'">
+                        <span class="px-1.5 py-0.5 bg-slate-500/10 text-slate-700 dark:text-slate-400 rounded font-bold">Tanpa Foto</span>
+                      </template>
+                      <template x-if="loc.required_photo !== 'tidak'">
+                        <span class="px-1.5 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 rounded font-bold">Wajib Foto</span>
+                      </template>
                     </div>
                     
                     <div class="text-[10px] text-slate-400 dark:text-slate-500 flex items-center gap-1 mt-1">
@@ -563,6 +569,22 @@
             </label>
           </div>
           <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Jika disetel WFH, karyawan yang ditugaskan dibebaskan dari batasan radius lokasi.</p>
+        </div>
+
+        <!-- Persyaratan Foto Selfie -->
+        <div>
+          <label class="block text-xs font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">Persyaratan Foto Selfie</label>
+          <div class="grid grid-cols-2 gap-4">
+            <label class="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer text-xs select-none">
+              <input type="radio" value="ya" x-model="requiredPhoto" class="w-4.5 h-4.5 text-blue-600">
+              <span class="text-slate-700 dark:text-slate-350 font-bold">Wajib Foto</span>
+            </label>
+            <label class="flex items-center gap-2 p-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl cursor-pointer text-xs select-none">
+              <input type="radio" value="tidak" x-model="requiredPhoto" class="w-4.5 h-4.5 text-slate-500">
+              <span class="text-slate-700 dark:text-slate-350 font-bold text-slate-500 dark:text-slate-400">Tanpa Foto</span>
+            </label>
+          </div>
+          <p class="text-[10px] text-slate-500 dark:text-slate-400 mt-1">Jika disetel Tanpa Foto, karyawan dapat melakukan absensi masuk/pulang secara langsung tanpa mengambil foto selfie.</p>
         </div>
 
         <!-- Hari Aktif Absensi -->
