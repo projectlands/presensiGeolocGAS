@@ -370,15 +370,16 @@ Untuk menjadikan script di atas sebagai API Endpoint PWA Anda:
 
 ## 4. MENYAMBUNGKAN FRONTEND KE BACKEND GOOGLE SHEET
 
-Setelah mendapatkan URL Aplikasi Web dari langkah di atas:
+Aplikasi ini dirancang untuk berjalan secara terpusat langsung ke backend Google Sheets Anda secara aman tanpa menggunakan LocalStorage untuk pengaturan dinamis.
 
-1. Jalankan aplikasi frontend PWA (buka `index.html` di browser Anda).
-2. Secara default, aplikasi berada dalam **Demo / Mock Mode** (ada banner kuning di atas halaman login).
-3. Klik tombol **Gear (Settings)** di bagian pojok kanan bawah halaman login.
-4. Tempelkan URL Google Apps Script Web App Anda ke dalam kotak textarea yang tersedia.
-5. Klik tombol **Simpan Koneksi**.
-6. Halaman akan dimuat ulang. Banner kuning demo akan hilang dan berganti menjadi banner hijau **"Terkoneksi ke Google Sheets Backend"**!
-7. Selesai! Sekarang semua aktivitas login, GPS, selfie, CRUD user, konfigurasi radius, dan ekspor laporan terhubung langsung secara real-time ke spreadsheet Anda!
+1. Buka file **`assets/js/app.js`**.
+2. Cari konfigurasi `apiUrl` di baris ke-9:
+   ```javascript
+   apiUrl: 'https://script.google.com/macros/s/AKfycbzLs3v63dA8yhquspGlGSDtZ_lhoo4HUjNf1lxG20Fpml1BtEAaX9T9zcgkdpPpAVuQ/exec',
+   ```
+3. Tempelkan URL Google Apps Script Web App Anda yang baru untuk menggantikan tautan default di atas.
+4. Simpan file `assets/js/app.js`.
+5. Selesai! Sekarang semua aktivitas login, GPS, selfie, CRUD user, konfigurasi radius, dan ekspor laporan langsung terhubung secara real-time ke spreadsheet Anda!
 
 ---
 
