@@ -37,6 +37,9 @@ document.addEventListener('alpine:init', () => {
     officeLat: -8.6705,
     officeLng: 115.2126,
     radius: 100,
+    assignedUsers: ['*'],
+    activeDays: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+    activeTab: 'dashboard',
 
     init() {
       // Route Lock check
@@ -265,6 +268,8 @@ document.addEventListener('alpine:init', () => {
       this.officeLat = -8.6705;
       this.officeLng = 115.2126;
       this.radius = 100;
+      this.assignedUsers = ['*'];
+      this.activeDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
       
       this.showLocationModal = true;
       this.initLocationPickerMap();
@@ -277,6 +282,12 @@ document.addEventListener('alpine:init', () => {
       this.officeLat = parseFloat(loc.office_lat);
       this.officeLng = parseFloat(loc.office_lng);
       this.radius = parseInt(loc.radius);
+      
+      const assigned = loc.assigned_users || '*';
+      this.assignedUsers = (assigned === '*' || assigned === '') ? ['*'] : assigned.split(',');
+      
+      const days = loc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
+      this.activeDays = days.split(',');
       
       this.showLocationModal = true;
       this.initLocationPickerMap();
@@ -349,7 +360,9 @@ document.addEventListener('alpine:init', () => {
           office_name: this.officeName,
           office_lat: this.officeLat,
           office_lng: this.officeLng,
-          radius: parseInt(this.radius)
+          radius: parseInt(this.radius),
+          assigned_users: this.assignedUsers.includes('*') || this.assignedUsers.length === 0 ? '*' : this.assignedUsers.join(','),
+          active_days: this.activeDays.length === 0 ? 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu' : this.activeDays.join(',')
         };
 
         const res = await ApiService.saveConfig(payload);

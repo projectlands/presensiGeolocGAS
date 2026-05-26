@@ -59,8 +59,13 @@ document.addEventListener('alpine:init', () => {
       try {
         // 1. Fetch Location Radius Configurations
         const configRes = await ApiService.getConfig();
+        const user = Auth.getUser();
         if (configRes.success && configRes.data.length > 0) {
-          this.locations = configRes.data;
+          // Filter locations that are assigned to this user
+          this.locations = configRes.data.filter(loc => {
+            const assigned = loc.assigned_users || '*';
+            return assigned === '*' || assigned === '' || assigned.split(',').includes(user.id);
+          });
         } else {
           // Absolute fallback if empty
           this.locations = [{
@@ -68,8 +73,16 @@ document.addEventListener('alpine:init', () => {
             office_name: 'Balisai HQ Default',
             office_lat: -8.6705,
             office_lng: 115.2126,
-            radius: 100
+            radius: 100,
+            assigned_users: '*',
+            active_days: 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu'
           }];
+        }
+
+        if (this.locations.length === 0) {
+          this.gpsError = 'Tidak ada lokasi absensi yang ditugaskan untuk akun Anda. Harap hubungi Admin.';
+          this.gpsLoading = false;
+          return;
         }
 
         // 2. Start Realtime Geolocation Tracker
@@ -186,11 +199,34 @@ document.addEventListener('alpine:init', () => {
       this.nearestLocation = closestLoc;
       this.distance = minDistance;
 
-      // Validate threshold radius
-      if (closestLoc && minDistance <= closestLoc.radius) {
-        this.isValidRadius = true;
+      if (!closestLoc) {
+        this.isValidRadius = false;
+        return;
+      }
+
+      // Check operational active days limit
+      const daysOfWeek = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const currentDayName = daysOfWeek[new Date().getDay()];
+      const activeDaysStr = closestLoc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
+      const activeDaysArr = activeDaysStr.split(',').map(d => d.trim());
+      
+      const isTodayActive = activeDaysArr.includes(currentDayName);
+
+      // Validate threshold radius AND operational day
+      if (minDistance <= closestLoc.radius) {
+        if (isTodayActive) {
+          this.isValidRadius = true;
+          this.gpsError = ''; // Clear error if valid
+        } else {
+          this.isValidRadius = false;
+          this.gpsError = `Absensi tidak aktif hari ini (${currentDayName}). Hari aktif: ${activeDaysStr}.`;
+        }
       } else {
         this.isValidRadius = false;
+        // If not in radius, reset any day error to prevent confusing the user
+        if (!isTodayActive) {
+          this.gpsError = `Absensi di cabang terdekat tidak aktif hari ini (${currentDayName}).`;
+        }
       }
     },
 

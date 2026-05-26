@@ -179,9 +179,9 @@ const Helper = {
     // 2. Multi-location configurations
     if (!localStorage.getItem('presensi_config')) {
       const dummyConfig = [
-        { location_id: 'LOC-01', office_name: 'Balisai Orchids HQ (Sanur)', office_lat: -8.6705, office_lng: 115.2126, radius: 100 },
-        { location_id: 'LOC-02', office_name: 'Kampus IT Sudirman', office_lat: -8.6582, office_lng: 115.2198, radius: 150 },
-        { location_id: 'LOC-03', office_name: 'Cabang Renon Plaza', office_lat: -8.6815, office_lng: 115.2285, radius: 50 }
+        { location_id: 'LOC-01', office_name: 'Balisai Orchids HQ (Sanur)', office_lat: -8.6705, office_lng: 115.2126, radius: 100, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat' },
+        { location_id: 'LOC-02', office_name: 'Kampus IT Sudirman', office_lat: -8.6582, office_lng: 115.2198, radius: 150, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat' },
+        { location_id: 'LOC-03', office_name: 'Cabang Renon Plaza', office_lat: -8.6815, office_lng: 115.2285, radius: 50, assigned_users: 'USR-1001', active_days: 'Senin,Selasa,Rabu,Kamis' }
       ];
       localStorage.setItem('presensi_config', JSON.stringify(dummyConfig));
     }

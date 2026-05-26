@@ -6,8 +6,8 @@ document.addEventListener('alpine:init', () => {
   // Global App Configuration Store
   Alpine.store('app', {
     darkMode: localStorage.getItem('presensi_dark_mode') === 'true',
-    apiUrl: 'https://script.google.com/macros/s/AKfycbxr1mNOwmxkv6r5v9K33on29WExE4sJYAa4CRHRqxC1Jtl1GYuCFApXVuOKyONzDlbK/exec', // Google Apps Script URL
-    isMockMode: false,
+    apiUrl: localStorage.getItem('presensi_gas_url') || 'https://script.google.com/macros/s/AKfycbwnFat8ePxTOy3GjVEU3T4j17i-PgwSm0ukzvbxKcWfKMnQBCLvElRLbR0cJsueiPty/exec', // Google Apps Script URL
+    isMockMode: localStorage.getItem('presensi_mock_mode') === 'true',
     isOnline: navigator.onLine,
 
     init() {
@@ -58,6 +58,7 @@ document.addEventListener('alpine:init', () => {
       this.apiUrl = url.trim();
       if (this.apiUrl) {
         localStorage.setItem('presensi_gas_url', this.apiUrl);
+        localStorage.setItem('presensi_mock_mode', 'false');
         this.isMockMode = false;
         Helper.Toast.fire({
           icon: 'success',
@@ -65,6 +66,7 @@ document.addEventListener('alpine:init', () => {
         });
       } else {
         localStorage.removeItem('presensi_gas_url');
+        localStorage.setItem('presensi_mock_mode', 'true');
         this.isMockMode = true;
         Helper.Toast.fire({
           icon: 'info',
