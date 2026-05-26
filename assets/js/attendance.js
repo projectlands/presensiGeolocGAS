@@ -360,25 +360,37 @@ document.addEventListener('alpine:init', () => {
     },
 
     captureSelfie() {
-      const videoEl = document.getElementById('cameraPreview');
-      const canvasEl = document.getElementById('captureCanvas');
+      try {
+        const videoEl = document.getElementById('cameraPreview');
+        const canvasEl = document.getElementById('captureCanvas');
 
-      if (!videoEl || !canvasEl) return;
+        if (!videoEl || !canvasEl) {
+          console.error('Preview elements not found.');
+          return;
+        }
 
-      const context = canvasEl.getContext('2d');
-      // Reset transform context first to avoid cumulative transforms on retakes
-      context.setTransform(1, 0, 0, 1, 0, 0);
-      
-      // Mirror front camera
-      context.translate(canvasEl.width, 0);
-      context.scale(-1, 1);
-      
-      // Capture frame
-      context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
-      
-      // Convert to base64
-      this.selfieData = canvasEl.toDataURL('image/jpeg', 0.8);
-      this.stopCamera();
+        const context = canvasEl.getContext('2d');
+        // Reset transform context first to avoid cumulative transforms on retakes
+        context.setTransform(1, 0, 0, 1, 0, 0);
+        
+        // Mirror front camera
+        context.translate(canvasEl.width, 0);
+        context.scale(-1, 1);
+        
+        // Capture frame
+        context.drawImage(videoEl, 0, 0, canvasEl.width, canvasEl.height);
+        
+        // Convert to base64
+        this.selfieData = canvasEl.toDataURL('image/jpeg', 0.8);
+        this.stopCamera();
+      } catch (err) {
+        console.error('Selfie capture failed:', err);
+        Helper.alert(
+          'Gagal Mengambil Foto',
+          `Terjadi kesalahan pada modul kamera: ${err.message}. Harap pastikan izin kamera aktif atau coba gunakan browser Chrome/Safari terbaru.`,
+          'error'
+        );
+      }
     },
 
     resetSelfie() {
