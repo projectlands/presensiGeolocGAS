@@ -168,10 +168,10 @@ const Helper = {
     // 1. Users
     if (!localStorage.getItem('presensi_users')) {
       const dummyUsers = [
-        { id: 'USR-1000', nama: 'Administrator Balisai', username: 'admin', password: 'admin123', role: 'admin', status: 'aktif' },
-        { id: 'USR-1001', nama: 'John Doe Developer', username: 'user', password: 'user123', role: 'user', status: 'aktif' },
-        { id: 'USR-1002', nama: 'Alice Smith Staff', username: 'alice', password: 'user123', role: 'user', status: 'aktif' },
-        { id: 'USR-1003', nama: 'Bob Johnson Inactive', username: 'bob', password: 'user123', role: 'user', status: 'nonaktif' }
+        { id: 'USR-1000', nama: 'Administrator Balisai', username: 'admin', password: 'admin123', role: 'admin', status: 'aktif', is_wfh: 'tidak' },
+        { id: 'USR-1001', nama: 'John Doe Developer', username: 'user', password: 'user123', role: 'user', status: 'aktif', is_wfh: 'ya' },
+        { id: 'USR-1002', nama: 'Alice Smith Staff', username: 'alice', password: 'user123', role: 'user', status: 'aktif', is_wfh: 'tidak' },
+        { id: 'USR-1003', nama: 'Bob Johnson Inactive', username: 'bob', password: 'user123', role: 'user', status: 'nonaktif', is_wfh: 'tidak' }
       ];
       localStorage.setItem('presensi_users', JSON.stringify(dummyUsers));
     }

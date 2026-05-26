@@ -181,6 +181,9 @@ document.addEventListener('alpine:init', () => {
     evaluateProximity() {
       if (this.locations.length === 0 || !this.latitude) return;
 
+      const user = Auth.getUser();
+      const isWfh = user && (user.is_wfh === 'ya' || user.is_wfh === 'true' || user.is_wfh === true);
+
       let closestLoc = null;
       let minDistance = Infinity;
 
@@ -198,6 +201,12 @@ document.addEventListener('alpine:init', () => {
 
       this.nearestLocation = closestLoc;
       this.distance = minDistance;
+
+      if (isWfh) {
+        this.isValidRadius = true;
+        this.gpsError = 'Mode WFH Aktif: Anda diizinkan melakukan absensi dari lokasi mana saja.';
+        return;
+      }
 
       if (!closestLoc) {
         this.isValidRadius = false;
@@ -369,7 +378,13 @@ document.addEventListener('alpine:init', () => {
 
         if (type === 'masuk') {
           attendancePayload.jam_masuk = timeStr;
-          attendancePayload.status = timeStr > '08:00:00' ? 'Terlambat' : 'Hadir';
+          const isWfh = user && (user.is_wfh === 'ya' || user.is_wfh === 'true' || user.is_wfh === true);
+          const isLate = timeStr > '08:00:00';
+          if (isWfh) {
+            attendancePayload.status = isLate ? 'Terlambat (WFH)' : 'Hadir (WFH)';
+          } else {
+            attendancePayload.status = isLate ? 'Terlambat' : 'Hadir';
+          }
         } else {
           attendancePayload.jam_pulang = timeStr;
         }

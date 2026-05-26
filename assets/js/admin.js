@@ -24,6 +24,7 @@ document.addEventListener('alpine:init', () => {
     password: '',
     role: 'user',
     status: 'aktif',
+    isWfh: 'tidak',
 
     // Location Config states
     locations: [],
@@ -125,6 +126,7 @@ document.addEventListener('alpine:init', () => {
       this.password = '';
       this.role = 'user';
       this.status = 'aktif';
+      this.isWfh = 'tidak';
       this.showUserModal = true;
     },
 
@@ -136,6 +138,7 @@ document.addEventListener('alpine:init', () => {
       this.password = user.password;
       this.role = user.role;
       this.status = user.status;
+      this.isWfh = user.is_wfh || 'tidak';
       this.showUserModal = true;
     },
 
@@ -154,7 +157,8 @@ document.addEventListener('alpine:init', () => {
           username: this.username,
           password: this.password,
           role: this.role,
-          status: this.status
+          status: this.status,
+          is_wfh: this.isWfh
         };
 
         if (this.userId) {

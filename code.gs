@@ -23,11 +23,11 @@ function setupSheets() {
     usersSheet = ss.insertSheet('USERS');
   }
   usersSheet.clear(); // Bersihkan jika ada konten sebelumnya
-  usersSheet.appendRow(['id', 'nama', 'username', 'password', 'role', 'status']);
+  usersSheet.appendRow(['id', 'nama', 'username', 'password', 'role', 'status', 'is_wfh']);
   // Seed Akun Default
-  usersSheet.appendRow(['USR-1000', 'Administrator Balisai', 'admin', 'admin123', 'admin', 'aktif']);
-  usersSheet.appendRow(['USR-1001', 'John Doe Staff', 'user', 'user123', 'user', 'aktif']);
-  usersSheet.appendRow(['USR-1002', 'Alice Smith Staff', 'alice', 'user123', 'user', 'aktif']);
+  usersSheet.appendRow(['USR-1000', 'Administrator Balisai', 'admin', 'admin123', 'admin', 'aktif', 'tidak']);
+  usersSheet.appendRow(['USR-1001', 'John Doe Staff', 'user', 'user123', 'user', 'aktif', 'ya']);
+  usersSheet.appendRow(['USR-1002', 'Alice Smith Staff', 'alice', 'user123', 'user', 'aktif', 'tidak']);
 
   // 2. Setup Sheet ABSENSI
   let absensiSheet = ss.getSheetByName('ABSENSI');
@@ -184,7 +184,8 @@ function createUser(ss, payload) {
     payload.username,
     payload.password,
     payload.role || 'user',
-    payload.status || 'aktif'
+    payload.status || 'aktif',
+    payload.is_wfh || 'tidak'
   ];
 
   sheet.appendRow(newRow);
@@ -205,6 +206,7 @@ function updateUser(ss, payload) {
       }
       sheet.getRange(i + 1, 5).setValue(payload.role);
       sheet.getRange(i + 1, 6).setValue(payload.status);
+      sheet.getRange(i + 1, 7).setValue(payload.is_wfh || 'tidak');
       return makeJsonResponse({ success: true, message: 'User berhasil diupdate!' });
     }
   }
