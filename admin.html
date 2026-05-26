@@ -515,9 +515,18 @@
 
         <!-- Draggable Picker map box -->
         <div>
-          <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider mb-2">
-            Sesuaikan Lokasi (Klik Peta / Seret Pin)
-          </label>
+          <div class="flex items-center justify-between mb-2">
+            <label class="block text-[10px] font-semibold text-slate-600 dark:text-slate-400 uppercase tracking-wider">
+              Sesuaikan Lokasi (Klik Peta / Seret Pin)
+            </label>
+            <button 
+              type="button"
+              @click="detectMyLocation()" 
+              class="text-[10px] font-bold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 focus:outline-none"
+            >
+              <i data-lucide="map-pin" class="w-3 h-3"></i> Gunakan Lokasi Saya
+            </button>
+          </div>
           <div id="pickerMap" class="w-full h-44 rounded-2xl border border-slate-200 dark:border-slate-800 shrink-0"></div>
         </div>
 

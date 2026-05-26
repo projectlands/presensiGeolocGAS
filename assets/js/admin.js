@@ -41,6 +41,11 @@ document.addEventListener('alpine:init', () => {
     activeDays: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
     isWfh: 'tidak',
     activeTab: 'dashboard',
+    
+    // Picker map references
+    pickerMap: null,
+    pickerMarker: null,
+    pickerCircle: null,
 
     init() {
       // Route Lock check
@@ -312,6 +317,8 @@ document.addEventListener('alpine:init', () => {
 
         const mapPicker = L.map('pickerMap', { attributionControl: false }).setView([this.officeLat, this.officeLng], 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png').addTo(mapPicker);
+        
+        this.pickerMap = mapPicker;
 
         // Visual radius circle
         const circle = L.circle([this.officeLat, this.officeLng], {
@@ -320,11 +327,15 @@ document.addEventListener('alpine:init', () => {
           fillOpacity: 0.15,
           radius: this.radius
         }).addTo(mapPicker);
+        
+        this.pickerCircle = circle;
 
         // Draggable pin marker
         const marker = L.marker([this.officeLat, this.officeLng], {
           draggable: true
         }).addTo(mapPicker);
+        
+        this.pickerMarker = marker;
 
         // Synchronize on drag
         marker.on('dragend', () => {
@@ -347,6 +358,39 @@ document.addEventListener('alpine:init', () => {
           this.officeLng = parseFloat(e.latlng.lng.toFixed(6));
         });
       }, 350);
+    },
+
+    detectMyLocation() {
+      if (!navigator.geolocation) {
+        Helper.alert('Tidak Didukung', 'Browser Anda tidak mendukung Geolokasi.', 'error');
+        return;
+      }
+
+      Helper.showLoading('Mendeteksi lokasi GPS Anda...');
+
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          Helper.closeLoading();
+          const lat = parseFloat(position.coords.latitude.toFixed(6));
+          const lng = parseFloat(position.coords.longitude.toFixed(6));
+
+          this.officeLat = lat;
+          this.officeLng = lng;
+
+          const latlng = L.latLng(lat, lng);
+          if (this.pickerMarker) this.pickerMarker.setLatLng(latlng);
+          if (this.pickerCircle) this.pickerCircle.setLatLng(latlng);
+          if (this.pickerMap) this.pickerMap.setView(latlng, 16);
+
+          Helper.alert('Lokasi Terdeteksi', `Berhasil memetakan koordinat Anda: ${lat}, ${lng}`, 'success');
+        },
+        (error) => {
+          Helper.closeLoading();
+          console.error(error);
+          Helper.alert('Gagal Geolokasi', 'Tidak dapat mendeteksi lokasi Anda. Pastikan GPS aktif dan izin lokasi diberikan.', 'error');
+        },
+        { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+      );
     },
 
     async saveLocation() {
