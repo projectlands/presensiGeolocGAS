@@ -181,9 +181,6 @@ document.addEventListener('alpine:init', () => {
     evaluateProximity() {
       if (this.locations.length === 0 || !this.latitude) return;
 
-      const user = Auth.getUser();
-      const isWfh = user && (user.is_wfh === 'ya' || user.is_wfh === 'true' || user.is_wfh === true);
-
       let closestLoc = null;
       let minDistance = Infinity;
 
@@ -202,12 +199,6 @@ document.addEventListener('alpine:init', () => {
       this.nearestLocation = closestLoc;
       this.distance = minDistance;
 
-      if (isWfh) {
-        this.isValidRadius = true;
-        this.gpsError = 'Mode WFH Aktif: Anda diizinkan melakukan absensi dari lokasi mana saja.';
-        return;
-      }
-
       if (!closestLoc) {
         this.isValidRadius = false;
         return;
@@ -221,8 +212,13 @@ document.addEventListener('alpine:init', () => {
       
       const isTodayActive = activeDaysArr.includes(currentDayName);
 
+      const isClosestWfh = closestLoc.is_wfh === 'ya' || closestLoc.is_wfh === 'true' || closestLoc.is_wfh === true;
+
       // Validate threshold radius AND operational day
-      if (minDistance <= closestLoc.radius) {
+      if (isClosestWfh) {
+        this.isValidRadius = true;
+        this.gpsError = `Mode WFH Aktif: Anda terhubung ke lokasi ${closestLoc.office_name} (Bebas Radius).`;
+      } else if (minDistance <= closestLoc.radius) {
         if (isTodayActive) {
           this.isValidRadius = true;
           this.gpsError = ''; // Clear error if valid
@@ -231,10 +227,21 @@ document.addEventListener('alpine:init', () => {
           this.gpsError = `Absensi tidak aktif hari ini (${currentDayName}). Hari aktif: ${activeDaysStr}.`;
         }
       } else {
-        this.isValidRadius = false;
-        // If not in radius, reset any day error to prevent confusing the user
-        if (!isTodayActive) {
-          this.gpsError = `Absensi di cabang terdekat tidak aktif hari ini (${currentDayName}).`;
+        // Outside the radius of the physically closest location.
+        // Check if there is any other assigned location that has is_wfh active!
+        const wfhLoc = this.locations.find(loc => loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true);
+        
+        if (wfhLoc) {
+          this.nearestLocation = wfhLoc;
+          this.distance = minDistance; // Keep distance parameter but bypass checking
+          this.isValidRadius = true;
+          this.gpsError = `Mode WFH Aktif: Anda terhubung ke lokasi ${wfhLoc.office_name} (Bebas Radius).`;
+        } else {
+          this.isValidRadius = false;
+          // If not in radius, reset any day error to prevent confusing the user
+          if (!isTodayActive) {
+            this.gpsError = `Absensi di cabang terdekat tidak aktif hari ini (${currentDayName}).`;
+          }
         }
       }
     },
@@ -378,7 +385,8 @@ document.addEventListener('alpine:init', () => {
 
         if (type === 'masuk') {
           attendancePayload.jam_masuk = timeStr;
-          const isWfh = user && (user.is_wfh === 'ya' || user.is_wfh === 'true' || user.is_wfh === true);
+          const activeLoc = this.nearestLocation;
+          const isWfh = activeLoc && (activeLoc.is_wfh === 'ya' || activeLoc.is_wfh === 'true' || activeLoc.is_wfh === true);
           const isLate = timeStr > '08:00:00';
           if (isWfh) {
             attendancePayload.status = isLate ? 'Terlambat (WFH)' : 'Hadir (WFH)';

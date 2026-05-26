@@ -168,10 +168,10 @@ const Helper = {
     // 1. Users
     if (!localStorage.getItem('presensi_users')) {
       const dummyUsers = [
-        { id: 'USR-1000', nama: 'Administrator Balisai', username: 'admin', password: 'admin123', role: 'admin', status: 'aktif', is_wfh: 'tidak' },
-        { id: 'USR-1001', nama: 'John Doe Developer', username: 'user', password: 'user123', role: 'user', status: 'aktif', is_wfh: 'ya' },
-        { id: 'USR-1002', nama: 'Alice Smith Staff', username: 'alice', password: 'user123', role: 'user', status: 'aktif', is_wfh: 'tidak' },
-        { id: 'USR-1003', nama: 'Bob Johnson Inactive', username: 'bob', password: 'user123', role: 'user', status: 'nonaktif', is_wfh: 'tidak' }
+        { id: 'USR-1000', nama: 'Administrator Balisai', username: 'admin', password: 'admin123', role: 'admin', status: 'aktif' },
+        { id: 'USR-1001', nama: 'John Doe Developer', username: 'user', password: 'user123', role: 'user', status: 'aktif' },
+        { id: 'USR-1002', nama: 'Alice Smith Staff', username: 'alice', password: 'user123', role: 'user', status: 'aktif' },
+        { id: 'USR-1003', nama: 'Bob Johnson Inactive', username: 'bob', password: 'user123', role: 'user', status: 'nonaktif' }
       ];
       localStorage.setItem('presensi_users', JSON.stringify(dummyUsers));
     }
@@ -179,9 +179,10 @@ const Helper = {
     // 2. Multi-location configurations
     if (!localStorage.getItem('presensi_config')) {
       const dummyConfig = [
-        { location_id: 'LOC-01', office_name: 'Balisai Orchids HQ (Sanur)', office_lat: -8.6705, office_lng: 115.2126, radius: 100, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat' },
-        { location_id: 'LOC-02', office_name: 'Kampus IT Sudirman', office_lat: -8.6582, office_lng: 115.2198, radius: 150, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat' },
-        { location_id: 'LOC-03', office_name: 'Cabang Renon Plaza', office_lat: -8.6815, office_lng: 115.2285, radius: 50, assigned_users: 'USR-1001', active_days: 'Senin,Selasa,Rabu,Kamis' }
+        { location_id: 'LOC-01', office_name: 'Balisai Orchids HQ (Sanur)', office_lat: -8.6705, office_lng: 115.2126, radius: 100, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat', is_wfh: 'tidak' },
+        { location_id: 'LOC-02', office_name: 'Kampus IT Sudirman', office_lat: -8.6582, office_lng: 115.2198, radius: 150, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat', is_wfh: 'tidak' },
+        { location_id: 'LOC-03', office_name: 'Cabang Renon Plaza', office_lat: -8.6815, office_lng: 115.2285, radius: 50, assigned_users: 'USR-1001', active_days: 'Senin,Selasa,Rabu,Kamis', is_wfh: 'tidak' },
+        { location_id: 'LOC-04', office_name: 'Kerja Dari Rumah (WFH)', office_lat: 0, office_lng: 0, radius: 999999, assigned_users: '*', active_days: 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu', is_wfh: 'ya' }
       ];
       localStorage.setItem('presensi_config', JSON.stringify(dummyConfig));
     }

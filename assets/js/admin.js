@@ -24,7 +24,6 @@ document.addEventListener('alpine:init', () => {
     password: '',
     role: 'user',
     status: 'aktif',
-    isWfh: 'tidak',
 
     // Location Config states
     locations: [],
@@ -40,6 +39,7 @@ document.addEventListener('alpine:init', () => {
     radius: 100,
     assignedUsers: ['*'],
     activeDays: ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'],
+    isWfh: 'tidak',
     activeTab: 'dashboard',
 
     init() {
@@ -126,7 +126,6 @@ document.addEventListener('alpine:init', () => {
       this.password = '';
       this.role = 'user';
       this.status = 'aktif';
-      this.isWfh = 'tidak';
       this.showUserModal = true;
     },
 
@@ -138,7 +137,6 @@ document.addEventListener('alpine:init', () => {
       this.password = user.password;
       this.role = user.role;
       this.status = user.status;
-      this.isWfh = user.is_wfh || 'tidak';
       this.showUserModal = true;
     },
 
@@ -157,8 +155,7 @@ document.addEventListener('alpine:init', () => {
           username: this.username,
           password: this.password,
           role: this.role,
-          status: this.status,
-          is_wfh: this.isWfh
+          status: this.status
         };
 
         if (this.userId) {
@@ -274,6 +271,7 @@ document.addEventListener('alpine:init', () => {
       this.radius = 100;
       this.assignedUsers = ['*'];
       this.activeDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
+      this.isWfh = 'tidak';
       
       this.showLocationModal = true;
       this.initLocationPickerMap();
@@ -292,6 +290,7 @@ document.addEventListener('alpine:init', () => {
       
       const days = loc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
       this.activeDays = days.split(',');
+      this.isWfh = loc.is_wfh || 'tidak';
       
       this.showLocationModal = true;
       this.initLocationPickerMap();
@@ -366,7 +365,8 @@ document.addEventListener('alpine:init', () => {
           office_lng: this.officeLng,
           radius: parseInt(this.radius),
           assigned_users: this.assignedUsers.includes('*') || this.assignedUsers.length === 0 ? '*' : this.assignedUsers.join(','),
-          active_days: this.activeDays.length === 0 ? 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu' : this.activeDays.join(',')
+          active_days: this.activeDays.length === 0 ? 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu' : this.activeDays.join(','),
+          is_wfh: this.isWfh
         };
 
         const res = await ApiService.saveConfig(payload);

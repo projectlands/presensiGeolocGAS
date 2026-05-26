@@ -23,11 +23,11 @@ function setupSheets() {
     usersSheet = ss.insertSheet('USERS');
   }
   usersSheet.clear(); // Bersihkan jika ada konten sebelumnya
-  usersSheet.appendRow(['id', 'nama', 'username', 'password', 'role', 'status', 'is_wfh']);
+  usersSheet.appendRow(['id', 'nama', 'username', 'password', 'role', 'status']);
   // Seed Akun Default
-  usersSheet.appendRow(['USR-1000', 'Administrator Balisai', 'admin', 'admin123', 'admin', 'aktif', 'tidak']);
-  usersSheet.appendRow(['USR-1001', 'John Doe Staff', 'user', 'user123', 'user', 'aktif', 'ya']);
-  usersSheet.appendRow(['USR-1002', 'Alice Smith Staff', 'alice', 'user123', 'user', 'aktif', 'tidak']);
+  usersSheet.appendRow(['USR-1000', 'Administrator Balisai', 'admin', 'admin123', 'admin', 'aktif']);
+  usersSheet.appendRow(['USR-1001', 'John Doe Staff', 'user', 'user123', 'user', 'aktif']);
+  usersSheet.appendRow(['USR-1002', 'Alice Smith Staff', 'alice', 'user123', 'user', 'aktif']);
 
   // 2. Setup Sheet ABSENSI
   let absensiSheet = ss.getSheetByName('ABSENSI');
@@ -43,11 +43,12 @@ function setupSheets() {
     configSheet = ss.insertSheet('CONFIG');
   }
   configSheet.clear();
-  configSheet.appendRow(['location_id', 'office_name', 'office_lat', 'office_lng', 'radius', 'assigned_users', 'active_days']);
+  configSheet.appendRow(['location_id', 'office_name', 'office_lat', 'office_lng', 'radius', 'assigned_users', 'active_days', 'is_wfh']);
   // Seed Lokasi Operasional Cabang
-  configSheet.appendRow(['LOC-01', 'Balisai HQ (Sanur)', -8.6705, 115.2126, 100, '*', 'Senin,Selasa,Rabu,Kamis,Jumat']);
-  configSheet.appendRow(['LOC-02', 'Kampus IT Sudirman', -8.6582, 115.2198, 150, '*', 'Senin,Selasa,Rabu,Kamis,Jumat']);
-  configSheet.appendRow(['LOC-03', 'Cabang Renon Plaza', -8.6815, 115.2285, 50, 'USR-1001', 'Senin,Selasa,Rabu,Kamis']);
+  configSheet.appendRow(['LOC-01', 'Balisai HQ (Sanur)', -8.6705, 115.2126, 100, '*', 'Senin,Selasa,Rabu,Kamis,Jumat', 'tidak']);
+  configSheet.appendRow(['LOC-02', 'Kampus IT Sudirman', -8.6582, 115.2198, 150, '*', 'Senin,Selasa,Rabu,Kamis,Jumat', 'tidak']);
+  configSheet.appendRow(['LOC-03', 'Cabang Renon Plaza', -8.6815, 115.2285, 50, 'USR-1001', 'Senin,Selasa,Rabu,Kamis', 'tidak']);
+  configSheet.appendRow(['LOC-04', 'Kerja Dari Rumah (WFH)', 0, 0, 999999, '*', 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu', 'ya']);
   
   // Hapus "Sheet1" bawaan Google Sheet jika kosong agar spreadsheet rapi
   let defaultSheet = ss.getSheetByName('Sheet1') || ss.getSheetByName('Sheet 1');
@@ -184,8 +185,7 @@ function createUser(ss, payload) {
     payload.username,
     payload.password,
     payload.role || 'user',
-    payload.status || 'aktif',
-    payload.is_wfh || 'tidak'
+    payload.status || 'aktif'
   ];
 
   sheet.appendRow(newRow);
@@ -206,7 +206,6 @@ function updateUser(ss, payload) {
       }
       sheet.getRange(i + 1, 5).setValue(payload.role);
       sheet.getRange(i + 1, 6).setValue(payload.status);
-      sheet.getRange(i + 1, 7).setValue(payload.is_wfh || 'tidak');
       return makeJsonResponse({ success: true, message: 'User berhasil diupdate!' });
     }
   }
@@ -244,6 +243,7 @@ function saveConfig(ss, payload) {
       sheet.getRange(i + 1, 5).setValue(payload.radius);
       sheet.getRange(i + 1, 6).setValue(payload.assigned_users || '*');
       sheet.getRange(i + 1, 7).setValue(payload.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu');
+      sheet.getRange(i + 1, 8).setValue(payload.is_wfh || 'tidak');
       return makeJsonResponse({ success: true, message: 'Konfigurasi lokasi berhasil diupdate!' });
     }
   }
@@ -255,7 +255,8 @@ function saveConfig(ss, payload) {
     payload.office_lng,
     payload.radius,
     payload.assigned_users || '*',
-    payload.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu'
+    payload.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
+    payload.is_wfh || 'tidak'
   ]);
   return makeJsonResponse({ success: true, message: 'Lokasi cabang berhasil ditambahkan!' });
 }
