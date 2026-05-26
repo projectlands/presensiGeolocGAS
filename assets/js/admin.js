@@ -350,7 +350,19 @@ document.addEventListener('alpine:init', () => {
     },
 
     async saveLocation() {
-      if (!this.officeName || !this.officeLat || !this.officeLng || !this.radius) {
+      const isWfhActive = this.isWfh === 'ya';
+
+      if (isWfhActive) {
+        this.officeLat = this.officeLat !== '' && this.officeLat !== null && this.officeLat !== undefined ? parseFloat(this.officeLat) : 0;
+        this.officeLng = this.officeLng !== '' && this.officeLng !== null && this.officeLng !== undefined ? parseFloat(this.officeLng) : 0;
+        this.radius = this.radius ? parseInt(this.radius) : 999999;
+      }
+
+      const isLatEmpty = this.officeLat === '' || this.officeLat === null || this.officeLat === undefined;
+      const isLngEmpty = this.officeLng === '' || this.officeLng === null || this.officeLng === undefined;
+      const isRadiusEmpty = !this.radius;
+
+      if (!this.officeName || (!isWfhActive && (isLatEmpty || isLngEmpty || isRadiusEmpty))) {
         Helper.alert('Peringatan', 'Harap isi semua koordinat wajib!', 'warning');
         return;
       }
