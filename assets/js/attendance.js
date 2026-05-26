@@ -12,6 +12,7 @@ document.addEventListener('alpine:init', () => {
     isValidRadius: false,
     gpsLoading: true,
     gpsError: '',
+    geofenceError: '',
     watchId: null,
     prevPosition: null,
 
@@ -179,6 +180,7 @@ document.addEventListener('alpine:init', () => {
      * Compute Haversine distance to locate closest branch
      */
     evaluateProximity() {
+      this.geofenceError = '';
       if (this.locations.length === 0 || !this.latitude) return;
 
       let closestLoc = null;
@@ -218,18 +220,18 @@ document.addEventListener('alpine:init', () => {
       if (isClosestWfh) {
         if (isTodayActive) {
           this.isValidRadius = true;
-          this.gpsError = `Mode WFH Aktif: Anda terhubung ke lokasi ${closestLoc.office_name} (Bebas Radius).`;
+          this.geofenceError = `Mode WFH Aktif: Anda terhubung ke lokasi ${closestLoc.office_name} (Bebas Radius).`;
         } else {
           this.isValidRadius = false;
-          this.gpsError = `Absensi WFH (${closestLoc.office_name}) tidak aktif hari ini (${currentDayName}). Hari aktif WFH: ${activeDaysStr}.`;
+          this.geofenceError = `Absensi WFH (${closestLoc.office_name}) tidak aktif hari ini (${currentDayName}). Hari aktif WFH: ${activeDaysStr}.`;
         }
       } else if (minDistance <= closestLoc.radius) {
         if (isTodayActive) {
           this.isValidRadius = true;
-          this.gpsError = ''; // Clear error if valid
+          this.geofenceError = ''; // Clear error if valid
         } else {
           this.isValidRadius = false;
-          this.gpsError = `Absensi tidak aktif hari ini (${currentDayName}). Hari aktif: ${activeDaysStr}.`;
+          this.geofenceError = `Absensi tidak aktif hari ini (${currentDayName}). Hari aktif: ${activeDaysStr}.`;
         }
       } else {
         // Outside the radius of the physically closest location.
@@ -248,12 +250,12 @@ document.addEventListener('alpine:init', () => {
           this.nearestLocation = wfhLoc;
           this.distance = minDistance; // Keep distance parameter but bypass checking
           this.isValidRadius = true;
-          this.gpsError = `Mode WFH Aktif: Anda terhubung ke lokasi ${wfhLoc.office_name} (Bebas Radius).`;
+          this.geofenceError = `Mode WFH Aktif: Anda terhubung ke lokasi ${wfhLoc.office_name} (Bebas Radius).`;
         } else {
           this.isValidRadius = false;
           // If not in radius, reset any day error to prevent confusing the user
           if (!isTodayActive) {
-            this.gpsError = `Absensi di cabang terdekat tidak aktif hari ini (${currentDayName}).`;
+            this.geofenceError = `Absensi di cabang terdekat tidak aktif hari ini (${currentDayName}).`;
           }
         }
       }
