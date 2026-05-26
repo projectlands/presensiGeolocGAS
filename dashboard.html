@@ -399,7 +399,7 @@
         <button 
           x-show="!selfieData"
           @click="captureSelfie()"
-          :disabled="cameraLoading || cameraError"
+          :disabled="!!cameraError"
           class="flex-1 py-3 bg-blue-600 text-white rounded-2xl text-sm font-bold hover:bg-blue-700 shadow-md shadow-blue-600/10 transition disabled:opacity-40"
         >
           Ambil Foto

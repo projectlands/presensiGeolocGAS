@@ -126,9 +126,11 @@ document.addEventListener('alpine:init', () => {
 
       this.watchId = navigator.geolocation.watchPosition(
         (position) => {
-          this.gpsLoading = false;
-          this.gpsError = '';
-          
+          if (position.coords.latitude === 0 && position.coords.longitude === 0) {
+            console.warn('Ignore Null Island (0,0) coordinates.');
+            return;
+          }
+
           // Telemetry spoofing checks
           const mockCheck = Helper.detectMockGPS(position);
           if (mockCheck.spoofed) {

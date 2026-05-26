@@ -130,7 +130,7 @@ function handleRequest(e) {
 // Helper: Convert Sheet to JSON Object Array
 function getSheetData(ss, sheetName) {
   const sheet = ss.getSheetByName(sheetName);
-  const rows = sheet.getDataRange().getValues();
+  const rows = sheet.getDataRange().getDisplayValues();
   const headers = rows[0];
   const data = [];
 
@@ -286,7 +286,7 @@ function getAttendance(ss, payload) {
 
 function saveAttendance(ss, payload) {
   const sheet = ss.getSheetByName('ABSENSI');
-  const data = sheet.getDataRange().getValues();
+  const data = sheet.getDataRange().getDisplayValues();
 
   let driveFileUrl = 'https://cdn-icons-png.flaticon.com/512/3135/3135715.png'; // default fallback
   if (payload.selfie_url && payload.selfie_url.startsWith('data:image')) {
