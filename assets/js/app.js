@@ -6,10 +6,10 @@ document.addEventListener('alpine:init', () => {
   // Global App Configuration Store
   Alpine.store('app', {
     darkMode: localStorage.getItem('presensi_dark_mode') === 'true',
-    apiUrl: 'https://script.google.com/macros/s/AKfycbwtwKqt6N1sNa4hyU6rcLI3O0LWj_ifgtryZinY4VB5AFT7GWHph22L-rqmP_cXojp5/exec', // Google Apps Script URL
+    apiUrl: 'https://script.google.com/macros/s/AKfycbz5Q2_5mM3SSh-DQiYJ8wPC2Fv9iZjTxO74bFfJCP_nvrgxX2ksjPN2EGZKNHgWvFWx/exec', // Google Apps Script URL
     isMockMode: false,
     isOnline: navigator.onLine,
-    
+
     // PWA Install Prompt States
     deferredPrompt: null,
     showInstallBanner: false,
@@ -29,7 +29,7 @@ document.addEventListener('alpine:init', () => {
       window.addEventListener('beforeinstallprompt', (e) => {
         e.preventDefault();
         this.deferredPrompt = e;
-        
+
         // Show our custom banner only if running as a web app in browser
         if (!this.isStandalone) {
           this.showInstallBanner = true;
