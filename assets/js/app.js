@@ -6,8 +6,8 @@ document.addEventListener('alpine:init', () => {
   // Global App Configuration Store
   Alpine.store('app', {
     darkMode: localStorage.getItem('presensi_dark_mode') === 'true',
-    apiUrl: localStorage.getItem('presensi_gas_url') || 'https://script.google.com/macros/s/AKfycbwnFat8ePxTOy3GjVEU3T4j17i-PgwSm0ukzvbxKcWfKMnQBCLvElRLbR0cJsueiPty/exec', // Google Apps Script URL
-    isMockMode: localStorage.getItem('presensi_mock_mode') === 'true',
+    apiUrl: 'https://script.google.com/macros/s/AKfycbzLs3v63dA8yhquspGlGSDtZ_lhoo4HUjNf1lxG20Fpml1BtEAaX9T9zcgkdpPpAVuQ/exec', // Google Apps Script URL
+    isMockMode: false,
     isOnline: navigator.onLine,
 
     init() {
@@ -51,27 +51,6 @@ document.addEventListener('alpine:init', () => {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
-      }
-    },
-
-    setApiUrl(url) {
-      this.apiUrl = url.trim();
-      if (this.apiUrl) {
-        localStorage.setItem('presensi_gas_url', this.apiUrl);
-        localStorage.setItem('presensi_mock_mode', 'false');
-        this.isMockMode = false;
-        Helper.Toast.fire({
-          icon: 'success',
-          title: 'Backend terhubung ke Google Apps Script!'
-        });
-      } else {
-        localStorage.removeItem('presensi_gas_url');
-        localStorage.setItem('presensi_mock_mode', 'true');
-        this.isMockMode = true;
-        Helper.Toast.fire({
-          icon: 'info',
-          title: 'Beralih ke Demo Mode (Lokal).'
-        });
       }
     }
   });

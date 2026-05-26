@@ -172,15 +172,6 @@
       <p class="text-xs text-slate-400 dark:text-slate-500">v1.2.0 • Presensi Geoloc PWA</p>
       
       <div class="flex items-center gap-3">
-        <!-- Settings Gear button to edit URL -->
-        <button 
-          @click="openSettingsModal()" 
-          class="p-2.5 rounded-full bg-slate-100 hover:bg-slate-200/80 dark:bg-slate-900 dark:hover:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-200/50 dark:border-slate-800 transition"
-          title="Pengaturan Koneksi Backend"
-        >
-          <i data-lucide="settings" class="w-4.5 h-4.5"></i>
-        </button>
-        
         <!-- Dark Mode Toggle Button -->
         <button 
           @click="$store.app.toggleDarkMode()" 
@@ -193,95 +184,11 @@
     </div>
   </div>
 
-  <!-- Settings Connection Modal -->
-  <div 
-    id="settingsModal" 
-    class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm hidden"
-    x-data="{ tempUrl: '' }"
-  >
-    <div class="glass-panel w-full max-w-lg rounded-3xl p-6 shadow-2xl border border-white/30 dark:border-slate-800">
-      <div class="flex items-center justify-between pb-4 border-b border-slate-100 dark:border-slate-800">
-        <div class="flex items-center gap-2">
-          <i data-lucide="database" class="w-5 h-5 text-blue-600 dark:text-blue-400"></i>
-          <h3 class="text-lg font-bold text-slate-900 dark:text-white">Pengaturan Koneksi API</h3>
-        </div>
-        <button @click="closeSettingsModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 transition">
-          <i data-lucide="x" class="w-5 h-5"></i>
-        </button>
-      </div>
-
-      <div class="py-5 space-y-4">
-        <div>
-          <label class="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-2">
-            URL Google Apps Script Web App
-          </label>
-          <textarea 
-            x-model="tempUrl" 
-            placeholder="https://script.google.com/macros/s/AKfycb.../exec" 
-            rows="3" 
-            class="w-full p-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-blue-600 dark:text-white resize-none"
-          ></textarea>
-          <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-2">
-            Kosongkan URL di atas untuk beralih kembali ke <strong>Demo Mode (Local Storage)</strong>. Dalam Demo Mode, data absensi dan CRUD disimpan secara lokal pada browser ini.
-          </p>
-        </div>
-      </div>
-
-      <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100 dark:border-slate-800">
-        <button 
-          @click="closeSettingsModal()" 
-          class="px-5 py-2.5 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition"
-        >
-          Batal
-        </button>
-        <button 
-          @click="saveSettings(tempUrl)" 
-          class="px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition"
-        >
-          Simpan Koneksi
-        </button>
-      </div>
-    </div>
-  </div>
-
   <script>
     // Initialize Lucide Icons
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
     });
-
-    // Helper functions to open and close settings modal outside Alpine logic if needed
-    function openSettingsModal() {
-      const modal = document.getElementById('settingsModal');
-      const currentUrl = localStorage.getItem('presensi_gas_url') || '';
-      
-      // Seed temporary variable in modal
-      const alpineEl = Alpine.discoverUnusedData ? Alpine.discoverUnusedData(modal) : null;
-      if (modal) {
-        modal.classList.remove('hidden');
-        // Retrieve internal alpine scope to set tempUrl
-        const alpineScope = Alpine.$data(modal);
-        if (alpineScope) alpineScope.tempUrl = currentUrl;
-      }
-      setTimeout(() => lucide.createIcons(), 50);
-    }
-
-    function closeSettingsModal() {
-      const modal = document.getElementById('settingsModal');
-      if (modal) modal.classList.add('hidden');
-    }
-
-    function saveSettings(url) {
-      // Sync into Alpine app store
-      const appStore = Alpine.store('app');
-      appStore.setApiUrl(url);
-      closeSettingsModal();
-      
-      // Reload page to re-trigger connections
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
-    }
   </script>
 </body>
 </html>
