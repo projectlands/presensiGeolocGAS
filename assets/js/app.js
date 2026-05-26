@@ -9,10 +9,53 @@ document.addEventListener('alpine:init', () => {
     apiUrl: 'https://script.google.com/macros/s/AKfycbwtwKqt6N1sNa4hyU6rcLI3O0LWj_ifgtryZinY4VB5AFT7GWHph22L-rqmP_cXojp5/exec', // Google Apps Script URL
     isMockMode: false,
     isOnline: navigator.onLine,
+    
+    // PWA Install Prompt States
+    deferredPrompt: null,
+    showInstallBanner: false,
+    isStandalone: window.matchMedia('(display-mode: standalone)').matches || navigator.standalone === true,
 
     init() {
       // Apply theme
       this.applyTheme();
+
+      // Listen for standalone display mode change
+      window.matchMedia('(display-mode: standalone)').addListener((evt) => {
+        this.isStandalone = evt.matches;
+        if (this.isStandalone) this.showInstallBanner = false;
+      });
+
+      // Listen for PWA beforeinstallprompt event
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        this.deferredPrompt = e;
+        
+        // Show our custom banner only if running as a web app in browser
+        if (!this.isStandalone) {
+          this.showInstallBanner = true;
+        }
+      });
+
+      // Listen for appinstalled success event
+      window.addEventListener('appinstalled', () => {
+        console.log('[PWA] Aplikasi berhasil terinstal!');
+        this.isStandalone = true;
+        this.showInstallBanner = false;
+        this.deferredPrompt = null;
+        Helper.Toast.fire({
+          icon: 'success',
+          title: 'Presensi Geoloc berhasil terpasang di perangkat Anda!'
+        });
+      });
+
+      // If running on iOS outside standalone mode, show custom iOS install guide!
+      const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+      if (isiOS && !this.isStandalone) {
+        // Delay slightly to let page render
+        setTimeout(() => {
+          this.showInstallBanner = true;
+        }, 1500);
+      }
 
       // Monitor network
       window.addEventListener('online', () => {
@@ -51,6 +94,34 @@ document.addEventListener('alpine:init', () => {
         document.documentElement.classList.add('dark');
       } else {
         document.documentElement.classList.remove('dark');
+      }
+    },
+
+    async triggerInstall() {
+      if (this.deferredPrompt) {
+        this.deferredPrompt.prompt();
+        const { outcome } = await this.deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          console.log('[PWA] User menerima installasi.');
+          this.showInstallBanner = false;
+        }
+        this.deferredPrompt = null;
+      } else {
+        // Check if iOS
+        const isiOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isiOS) {
+          Helper.alert(
+            'Panduan Pemasangan iOS',
+            '1. Ketuk tombol "Bagikan" (Share) di bagian bawah Safari.\n2. Gulir ke bawah dan ketuk "Tambahkan ke Layar Utama" (Add to Home Screen).\n3. Ketuk "Tambah" (Add) di sudut kanan atas.',
+            'info'
+          );
+        } else {
+          Helper.alert(
+            'Petunjuk Instalasi',
+            'Buka menu browser Anda (titik tiga di kanan atas) dan ketuk "Tambahkan ke Layar Utama" atau "Instal Aplikasi".',
+            'info'
+          );
+        }
       }
     }
   });
