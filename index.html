@@ -103,6 +103,8 @@
             <input 
               type="text" 
               id="username" 
+              name="username"
+              autocomplete="username"
               x-model="username" 
               placeholder="Masukkan username Anda" 
               class="w-full pl-11 pr-4 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 dark:text-white transition duration-200"
@@ -120,6 +122,8 @@
             <input 
               :type="show ? 'text' : 'password'" 
               id="password" 
+              name="password"
+              autocomplete="current-password"
               x-model="password" 
               placeholder="Masukkan password Anda" 
               class="w-full pl-11 pr-11 py-3 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-blue-600 dark:focus:ring-blue-500 dark:text-white transition duration-200"
