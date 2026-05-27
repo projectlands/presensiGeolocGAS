@@ -2,7 +2,7 @@
  * Progressive Web App Service Worker - Network-First Strategy
  */
 
-const CACHE_NAME = 'presensi-geoloc-cache-v1.3';
+const CACHE_NAME = 'presensi-geoloc-cache-v1.4';
 const ASSETS_TO_CACHE = [
   './',
   './index.html',

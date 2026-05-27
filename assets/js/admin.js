@@ -42,6 +42,8 @@ document.addEventListener('alpine:init', () => {
     isWfh: 'tidak',
     activeTab: 'dashboard',
     requiredPhoto: 'ya',
+    workingHourStart: '08:00',
+    workingHourEnd: '17:00',
     
     // Picker map references
     pickerMap: null,
@@ -279,6 +281,8 @@ document.addEventListener('alpine:init', () => {
       this.activeDays = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat'];
       this.isWfh = 'tidak';
       this.requiredPhoto = 'ya';
+      this.workingHourStart = '08:00';
+      this.workingHourEnd = '17:00';
       
       this.showLocationModal = true;
       this.initLocationPickerMap();
@@ -299,6 +303,8 @@ document.addEventListener('alpine:init', () => {
       this.activeDays = days.split(',');
       this.isWfh = loc.is_wfh || 'tidak';
       this.requiredPhoto = loc.required_photo || 'ya';
+      this.workingHourStart = loc.working_hour_start || '08:00';
+      this.workingHourEnd = loc.working_hour_end || '17:00';
       
       this.showLocationModal = true;
       this.initLocationPickerMap();
@@ -426,7 +432,9 @@ document.addEventListener('alpine:init', () => {
           assigned_users: this.assignedUsers.includes('*') || this.assignedUsers.length === 0 ? '*' : this.assignedUsers.join(','),
           active_days: this.activeDays.length === 0 ? 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu' : this.activeDays.join(','),
           is_wfh: this.isWfh,
-          required_photo: this.requiredPhoto
+          required_photo: this.requiredPhoto,
+          working_hour_start: this.workingHourStart,
+          working_hour_end: this.workingHourEnd
         };
 
         const res = await ApiService.saveConfig(payload);

@@ -104,18 +104,11 @@ document.addEventListener('alpine:init', () => {
       this.currentDate = Helper.formatDateTime(Helper.formatDate(now));
     },
 
-    /**
-     * Set up real-time geolocation tracking with watchPosition
-     */
     startGpsTracking() {
       if (!navigator.geolocation) {
         this.gpsError = 'Browser Anda tidak mendukung layanan Geolokasi.';
         this.gpsLoading = false;
         return;
-      }
-
-      if (this.watchId) {
-        navigator.geolocation.clearWatch(this.watchId);
       }
 
       const geoOptions = {
@@ -124,10 +117,11 @@ document.addEventListener('alpine:init', () => {
         maximumAge: 0
       };
 
-      this.watchId = navigator.geolocation.watchPosition(
+      navigator.geolocation.getCurrentPosition(
         (position) => {
           if (position.coords.latitude === 0 && position.coords.longitude === 0) {
             console.warn('Ignore Null Island (0,0) coordinates.');
+            this.gpsLoading = false;
             return;
           }
 
@@ -140,18 +134,6 @@ document.addEventListener('alpine:init', () => {
             return;
           }
 
-          // Physics anomaly check
-          if (this.prevPosition) {
-            const speedCheck = Helper.checkSpeedAnomaly(this.prevPosition, position);
-            if (speedCheck.anomaly) {
-              this.gpsError = speedCheck.reason;
-              this.isValidRadius = false;
-              this.gpsLoading = false;
-              return;
-            }
-          }
-
-          this.prevPosition = position;
           this.latitude = position.coords.latitude;
           this.longitude = position.coords.longitude;
           this.accuracy = position.coords.accuracy;
@@ -163,7 +145,7 @@ document.addEventListener('alpine:init', () => {
           this.gpsLoading = false;
         },
         (error) => {
-          console.error('GPS Watch Error:', error);
+          console.error('GPS GetPosition Error:', error);
           this.gpsLoading = false;
           switch (error.code) {
             case error.PERMISSION_DENIED:
@@ -181,6 +163,14 @@ document.addEventListener('alpine:init', () => {
         },
         geoOptions
       );
+    },
+
+    canClockOut() {
+      if (!this.nearestLocation) return false;
+      const endHour = this.nearestLocation.working_hour_end || '17:00';
+      const currentTimeStr = this.currentTime; // e.g. "08:30:15"
+      if (!currentTimeStr) return false;
+      return currentTimeStr >= (endHour + ':00');
     },
 
     /**
@@ -483,7 +473,8 @@ document.addEventListener('alpine:init', () => {
           attendancePayload.jam_masuk = timeStr;
           const activeLoc = this.nearestLocation;
           const isWfh = activeLoc && (activeLoc.is_wfh === 'ya' || activeLoc.is_wfh === 'true' || activeLoc.is_wfh === true);
-          const isLate = timeStr > '08:00:00';
+          const limitTime = (activeLoc && activeLoc.working_hour_start) ? (activeLoc.working_hour_start + ':00') : '08:00:00';
+          const isLate = timeStr > limitTime;
           if (isWfh) {
             attendancePayload.status = isLate ? 'Terlambat (WFH)' : 'Hadir (WFH)';
           } else {

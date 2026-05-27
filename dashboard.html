@@ -256,7 +256,7 @@
           <div class="space-y-2">
             <button 
               @click="triggerAttendanceAction('pulang')"
-              :disabled="!isValidRadius || !todayAttendance || (todayAttendance && todayAttendance.jam_pulang)"
+              :disabled="!isValidRadius || !todayAttendance || (todayAttendance && todayAttendance.jam_pulang) || !canClockOut()"
               class="w-full py-4 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-bold shadow-lg shadow-blue-600/10 hover:translate-y-[-1px] active:translate-y-[0px] focus:outline-none transition duration-200 disabled:opacity-40 disabled:pointer-events-none flex flex-col items-center justify-center gap-1"
             >
               <i data-lucide="log-out" class="w-6 h-6"></i>
@@ -271,6 +271,11 @@
         <!-- Outside perimeter warning helper -->
         <div x-show="!isValidRadius && !gpsLoading && !gpsError" class="p-3 bg-amber-500/10 rounded-2xl text-[11px] text-amber-800 dark:text-amber-400 font-medium">
           Tombol dinonaktifkan karena Anda di luar radius. Silakan mendekat ke area <strong><span x-text="nearestLocation ? nearestLocation.office_name : 'kantor'"></span></strong> (Radius <span x-text="nearestLocation ? nearestLocation.radius : '100'"></span>m).
+        </div>
+
+        <!-- Early check-out warning helper -->
+        <div x-show="isValidRadius && todayAttendance && !todayAttendance.jam_pulang && !canClockOut() && !gpsLoading && !gpsError" class="p-3 bg-indigo-500/10 border border-indigo-500/15 rounded-2xl text-[11px] text-indigo-800 dark:text-indigo-400 font-medium transition-all duration-300">
+          <i data-lucide="clock" class="w-3.5 h-3.5 inline mr-1 text-indigo-500"></i> Absen pulang baru dibuka mulai pukul <strong class="text-indigo-600 dark:text-indigo-400" x-text="nearestLocation ? nearestLocation.working_hour_end : '17:00'"></strong>.
         </div>
       </section>
 

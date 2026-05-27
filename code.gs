@@ -43,12 +43,12 @@ function setupSheets() {
     configSheet = ss.insertSheet('CONFIG');
   }
   configSheet.clear();
-  configSheet.appendRow(['location_id', 'office_name', 'office_lat', 'office_lng', 'radius', 'assigned_users', 'active_days', 'is_wfh', 'required_photo']);
+  configSheet.appendRow(['location_id', 'office_name', 'office_lat', 'office_lng', 'radius', 'assigned_users', 'active_days', 'is_wfh', 'required_photo', 'working_hour_start', 'working_hour_end']);
   // Seed Lokasi Operasional Cabang
-  configSheet.appendRow(['LOC-01', 'Balisai HQ (Sanur)', -8.6705, 115.2126, 100, '*', 'Senin,Selasa,Rabu,Kamis,Jumat', 'tidak', 'ya']);
-  configSheet.appendRow(['LOC-02', 'Kampus IT Sudirman', -8.6582, 115.2198, 150, '*', 'Senin,Selasa,Rabu,Kamis,Jumat', 'tidak', 'ya']);
-  configSheet.appendRow(['LOC-03', 'Cabang Renon Plaza', -8.6815, 115.2285, 50, 'USR-1001', 'Senin,Selasa,Rabu,Kamis', 'tidak', 'ya']);
-  configSheet.appendRow(['LOC-04', 'Kerja Dari Rumah (WFH)', 0, 0, 999999, '*', 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu', 'ya', 'ya']);
+  configSheet.appendRow(['LOC-01', 'Balisai HQ (Sanur)', -8.6705, 115.2126, 100, '*', 'Senin,Selasa,Rabu,Kamis,Jumat', 'tidak', 'ya', '08:00', '17:00']);
+  configSheet.appendRow(['LOC-02', 'Kampus IT Sudirman', -8.6582, 115.2198, 150, '*', 'Senin,Selasa,Rabu,Kamis,Jumat', 'tidak', 'ya', '08:00', '17:00']);
+  configSheet.appendRow(['LOC-03', 'Cabang Renon Plaza', -8.6815, 115.2285, 50, 'USR-1001', 'Senin,Selasa,Rabu,Kamis', 'tidak', 'ya', '08:00', '17:00']);
+  configSheet.appendRow(['LOC-04', 'Kerja Dari Rumah (WFH)', 0, 0, 999999, '*', 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu', 'ya', 'ya', '08:00', '17:00']);
   
   // Hapus "Sheet1" bawaan Google Sheet jika kosong agar spreadsheet rapi
   let defaultSheet = ss.getSheetByName('Sheet1') || ss.getSheetByName('Sheet 1');
@@ -245,6 +245,8 @@ function saveConfig(ss, payload) {
       sheet.getRange(i + 1, 7).setValue(payload.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu');
       sheet.getRange(i + 1, 8).setValue(payload.is_wfh || 'tidak');
       sheet.getRange(i + 1, 9).setValue(payload.required_photo || 'ya');
+      sheet.getRange(i + 1, 10).setValue(payload.working_hour_start || '08:00');
+      sheet.getRange(i + 1, 11).setValue(payload.working_hour_end || '17:00');
       return makeJsonResponse({ success: true, message: 'Konfigurasi lokasi berhasil diupdate!' });
     }
   }
@@ -258,7 +260,9 @@ function saveConfig(ss, payload) {
     payload.assigned_users || '*',
     payload.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu',
     payload.is_wfh || 'tidak',
-    payload.required_photo || 'ya'
+    payload.required_photo || 'ya',
+    payload.working_hour_start || '08:00',
+    payload.working_hour_end || '17:00'
   ]);
   return makeJsonResponse({ success: true, message: 'Lokasi cabang berhasil ditambahkan!' });
 }
