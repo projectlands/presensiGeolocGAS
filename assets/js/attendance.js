@@ -445,8 +445,40 @@ document.addEventListener('alpine:init', () => {
         return;
       }
 
+      Helper.showLoading('Memverifikasi lokasi GPS aktual Anda...');
+
+      // Proteksi anti-fraud: Verifikasi lokasi instan tepat sebelum data absensi dikirim ke server
+      try {
+        const position = await new Promise((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: true,
+            timeout: 6000,
+            maximumAge: 0
+          });
+        });
+
+        const mockCheck = Helper.detectMockGPS(position);
+        if (mockCheck.spoofed) {
+          Helper.closeLoading();
+          Helper.alert('Absensi Ditolak', mockCheck.reason, 'error');
+          this.gpsError = mockCheck.reason;
+          this.isValidRadius = false;
+          return;
+        }
+
+        this.latitude = position.coords.latitude;
+        this.longitude = position.coords.longitude;
+        this.accuracy = position.coords.accuracy;
+        
+        // Evaluasi ulang jarak dan radius secara aktual
+        this.evaluateProximity();
+      } catch (err) {
+        console.warn('Silent GPS verification timed out, fallback to locked state:', err);
+      }
+
       if (!this.isValidRadius) {
-        Helper.alert('Kesalahan Lokasi', 'Anda berada di luar radius kantor yang diizinkan!', 'error');
+        Helper.closeLoading();
+        Helper.alert('Absensi Ditolak', 'Lokasi aktual Anda terdeteksi berada di luar radius kantor yang diizinkan!', 'error');
         return;
       }
 
