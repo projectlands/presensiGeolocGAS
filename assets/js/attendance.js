@@ -381,7 +381,12 @@ document.addEventListener('alpine:init', () => {
         
         // Convert to base64
         this.selfieData = canvasEl.toDataURL('image/jpeg', 0.8);
-        this.stopCamera();
+        
+        // Stop the camera preview stream to release device hardware, but KEEP the modal open for user review
+        if (this.videoStream) {
+          this.videoStream.getTracks().forEach(track => track.stop());
+          this.videoStream = null;
+        }
       } catch (err) {
         console.error('Selfie capture failed:', err);
         Helper.alert(
@@ -522,6 +527,7 @@ document.addEventListener('alpine:init', () => {
 
         if (res.success) {
           this.selfieData = null;
+          this.isCameraOpen = false; // Close the modal upon successful attendance logging!
           Helper.alert(
             'Absensi Berhasil!',
             `Presensi ${type === 'masuk' ? 'Masuk' : 'Pulang'} Anda tersimpan pada pukul ${timeStr.substring(0, 5)}.`,

@@ -358,7 +358,7 @@ function uploadSelfieToDrive(base64Str, employeeName) {
     // Buka akses file agar public link viewer
     file.setSharing(DriveApp.Access.ANYONE, DriveApp.Permission.VIEW);
     
-    return "https://drive.google.com/uc?export=view&id=" + file.getId();
+    return "https://drive.google.com/thumbnail?id=" + file.getId();
   } catch (err) {
     Logger.log("Drive Upload Error: " + err.toString());
     return "https://cdn-icons-png.flaticon.com/512/3135/3135715.png";
