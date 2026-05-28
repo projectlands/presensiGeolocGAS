@@ -6,7 +6,7 @@ document.addEventListener('alpine:init', () => {
   // Global App Configuration Store
   Alpine.store('app', {
     darkMode: localStorage.getItem('presensi_dark_mode') === 'true',
-    apiUrl: 'https://script.google.com/macros/s/AKfycbxP505hm9O_dW7vEaZordBk2TdtG23Q4DPmuVl-sqyolqSlNjJ56DMSFakj2cQmCFAa/exec', // Google Apps Script URL
+    apiUrl: 'https://script.google.com/macros/s/AKfycby2YkAOr7LG3EPRlsbUA8a1GuI90eoVP71QDgD6mtIMcY0cn6L7qT2Sbjwgjna0ajVI/exec', // Google Apps Script URL
     isMockMode: false,
     isOnline: navigator.onLine,
 
