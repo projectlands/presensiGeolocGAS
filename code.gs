@@ -226,12 +226,37 @@ function deleteUser(ss, payload) {
   return makeJsonResponse({ success: false, message: 'User tidak ditemukan.' });
 }
 
+function ensureConfigHeaders(ss) {
+  try {
+    const sheet = ss.getSheetByName('CONFIG');
+    const lastCol = Math.max(1, sheet.getLastColumn());
+    const headers = sheet.getRange(1, 1, 1, lastCol).getValues()[0];
+    
+    let needsFix = false;
+    if (headers.indexOf('working_hour_start') === -1) {
+      sheet.getRange(1, 10).setValue('working_hour_start');
+      needsFix = true;
+    }
+    if (headers.indexOf('working_hour_end') === -1) {
+      sheet.getRange(1, 11).setValue('working_hour_end');
+      needsFix = true;
+    }
+    if (needsFix) {
+      SpreadsheetApp.flush();
+    }
+  } catch (err) {
+    Logger.log("Error in ensureConfigHeaders: " + err.toString());
+  }
+}
+
 function getConfig(ss) {
+  ensureConfigHeaders(ss);
   const data = getSheetData(ss, 'CONFIG');
   return makeJsonResponse({ success: true, data: data });
 }
 
 function saveConfig(ss, payload) {
+  ensureConfigHeaders(ss);
   const sheet = ss.getSheetByName('CONFIG');
   const data = sheet.getDataRange().getValues();
   
