@@ -180,81 +180,94 @@ document.addEventListener('alpine:init', () => {
       this.geofenceError = '';
       if (this.locations.length === 0 || !this.latitude) return;
 
-      let closestLoc = null;
-      let minDistance = Infinity;
+      const daysOfWeek = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+      const currentDayName = daysOfWeek[new Date().getDay()];
+
+      // 1. Dapatkan lokasi-lokasi yang aktif hari ini
+      const activeLocationsToday = this.locations.filter(loc => {
+        const activeDaysStr = loc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
+        const activeDaysArr = activeDaysStr.split(',').map(d => d.trim());
+        return activeDaysArr.includes(currentDayName);
+      });
+
+      // Dapatkan lokasi fisik terdekat (berdasarkan koordinat) untuk kalkulasi jarak dasar
+      let physicallyClosest = null;
+      let minPhysDistance = Infinity;
 
       this.locations.forEach(loc => {
         const d = Helper.calculateDistance(
           this.latitude, this.longitude,
           parseFloat(loc.office_lat), parseFloat(loc.office_lng)
         );
-
-        if (d < minDistance) {
-          minDistance = d;
-          closestLoc = loc;
+        if (d < minPhysDistance) {
+          minPhysDistance = d;
+          physicallyClosest = loc;
         }
       });
 
-      this.nearestLocation = closestLoc;
-      this.distance = minDistance;
+      this.nearestLocation = physicallyClosest;
+      this.distance = minPhysDistance;
 
-      if (!closestLoc) {
-        this.isValidRadius = false;
+      // 2. Evaluasi apakah user berada di dalam radius salah satu kantor fisik yang AKTIF hari ini
+      let matchedOffice = null;
+      let matchedOfficeDistance = Infinity;
+
+      activeLocationsToday.forEach(loc => {
+        const isWfh = loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true;
+        if (isWfh) return; // Lewati WFH dulu
+
+        const d = Helper.calculateDistance(
+          this.latitude, this.longitude,
+          parseFloat(loc.office_lat), parseFloat(loc.office_lng)
+        );
+
+        if (d <= parseFloat(loc.radius)) {
+          if (d < matchedOfficeDistance) {
+            matchedOfficeDistance = d;
+            matchedOffice = loc;
+          }
+        }
+      });
+
+      if (matchedOffice) {
+        // User sukses terdeteksi berada di radius kantor fisik yang aktif hari ini!
+        this.nearestLocation = matchedOffice;
+        this.distance = matchedOfficeDistance;
+        this.isValidRadius = true;
+        this.geofenceError = '';
         return;
       }
 
-      // Check operational active days limit
-      const daysOfWeek = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
-      const currentDayName = daysOfWeek[new Date().getDay()];
-      const activeDaysStr = closestLoc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
-      const activeDaysArr = activeDaysStr.split(',').map(d => d.trim());
+      // 3. Jika tidak berada di radius kantor fisik aktif, cek apakah ada WFH yang aktif hari ini
+      const activeWfh = activeLocationsToday.find(loc => {
+        return loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true;
+      });
+
+      if (activeWfh) {
+        // User berhak absen menggunakan mode WFH (Bebas Radius) hari ini!
+        this.nearestLocation = activeWfh;
+        // Tetap set distance ke kantor fisik terdekat agar UI menampilkan metrik jarak yang realistis
+        this.distance = minPhysDistance;
+        this.isValidRadius = true;
+        this.geofenceError = `Mode WFH Aktif: Anda terhubung ke lokasi ${activeWfh.office_name} (Bebas Radius).`;
+        return;
+      }
+
+      // 4. Jika tidak memenuhi semua di atas, user dilarang absen. Berikan alasan error yang paling informatif
+      this.isValidRadius = false;
       
-      const isTodayActive = activeDaysArr.includes(currentDayName);
+      if (physicallyClosest) {
+        const activeDaysStr = physicallyClosest.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
+        const activeDaysArr = activeDaysStr.split(',').map(d => d.trim());
+        const isClosestActive = activeDaysArr.includes(currentDayName);
 
-      const isClosestWfh = closestLoc.is_wfh === 'ya' || closestLoc.is_wfh === 'true' || closestLoc.is_wfh === true;
-
-      // Validate threshold radius AND operational day
-      if (isClosestWfh) {
-        if (isTodayActive) {
-          this.isValidRadius = true;
-          this.geofenceError = `Mode WFH Aktif: Anda terhubung ke lokasi ${closestLoc.office_name} (Bebas Radius).`;
-        } else {
-          this.isValidRadius = false;
-          this.geofenceError = `Absensi WFH (${closestLoc.office_name}) tidak aktif hari ini (${currentDayName}). Hari aktif WFH: ${activeDaysStr}.`;
-        }
-      } else if (minDistance <= closestLoc.radius) {
-        if (isTodayActive) {
-          this.isValidRadius = true;
-          this.geofenceError = ''; // Clear error if valid
-        } else {
-          this.isValidRadius = false;
+        if (!isClosestActive) {
           this.geofenceError = `Absensi tidak aktif hari ini (${currentDayName}). Hari aktif: ${activeDaysStr}.`;
+        } else {
+          this.geofenceError = ''; // Biarkan warning radius bawaan berjalan
         }
       } else {
-        // Outside the radius of the physically closest location.
-        // Check if there is any other assigned location that has is_wfh active and is active today!
-        const wfhLoc = this.locations.find(loc => {
-          const isWfh = loc.is_wfh === 'ya' || loc.is_wfh === 'true' || loc.is_wfh === true;
-          if (!isWfh) return false;
-          
-          // Check if WFH location is active today
-          const activeDaysStr = loc.active_days || 'Senin,Selasa,Rabu,Kamis,Jumat,Sabtu,Minggu';
-          const activeDaysArr = activeDaysStr.split(',').map(d => d.trim());
-          return activeDaysArr.includes(currentDayName);
-        });
-        
-        if (wfhLoc) {
-          this.nearestLocation = wfhLoc;
-          this.distance = minDistance; // Keep distance parameter but bypass checking
-          this.isValidRadius = true;
-          this.geofenceError = `Mode WFH Aktif: Anda terhubung ke lokasi ${wfhLoc.office_name} (Bebas Radius).`;
-        } else {
-          this.isValidRadius = false;
-          // If not in radius, reset any day error to prevent confusing the user
-          if (!isTodayActive) {
-            this.geofenceError = `Absensi di cabang terdekat tidak aktif hari ini (${currentDayName}).`;
-          }
-        }
+        this.geofenceError = 'Anda berada di luar radius kantor dan tidak memiliki izin WFH aktif hari ini.';
       }
     },
 
